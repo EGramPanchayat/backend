@@ -19,9 +19,9 @@ export async function uploadToCloudinary(localFilePath, folderPath, name) {
     fs.unlinkSync(localFilePath);
     return { url: response.secure_url, public_id: response.public_id };
   } catch (err) {
-    console.error("Upload failed:", err);
     if (fs.existsSync(localFilePath)) fs.unlinkSync(localFilePath);
-    return null;
+    // throw the error to be handled in your route
+    throw new Error(`Cloudinary upload failed: ${err.message}`);
   }
 }
 
@@ -29,7 +29,6 @@ export async function deleteFromCloudinary(publicId) {
   try {
     return await cloudinary.uploader.destroy(publicId);
   } catch (err) {
-    console.error("Delete failed:", err);
-    return null;
+    throw new Error(`Cloudinary delete failed: ${err.message}`);
   }
 }
