@@ -13,7 +13,7 @@ const uri = process.env.MONGO_URL;
 
 // --- MIDDLEWARE ---https://gpgomevadi.netlify.app/login
 app.use(cors({                       // ✅ allow your frontend origin here
-  origin: ["http://localhost:5173","https://gptagarkheda.vercel.app","https://gpshelagi.vercel.app","https://gpambewadi.vercel.app", "https://gpgomewadi.vercel.app", "https://gpambewadi.netlify.app", "http://localhost:5174"], // or your deployed frontend URL
+  origin: ["http://localhost:5173", "http://localhost:5174","https://gpgomevadi.in/","https://gpambewadi.in/","https://gpshelagi.in/", "https://gptagarkheda.in/"], // or your deployed frontend URL
   credentials: true,                 // if you send cookies/auth headers
 }));
 app.use(express.json());
