@@ -11,6 +11,7 @@ cloudinary.config({
 });
 
 export async function uploadToCloudinary(localFilePath, folderPath, name) {
+  
   try {
     const response = await cloudinary.uploader.upload(localFilePath, {
       folder: folderPath,

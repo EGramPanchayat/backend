@@ -5,6 +5,9 @@ import { upsertExecutiveBoard, getExecutiveBoard } from "../controllers/executiv
 import { getDevWorks, createDevWorks, deleteDevWork } from "../controllers/developementWorks.controller.js";
 import { createNews, getNews, deleteNews } from "../controllers/news.controller.js";
 import { uploadQR, getQR } from "../controllers/qr.controller.js";
+import { uploadPaymentQR, getPaymentQR } from '../controllers/dakhalaMagani.controller.js';
+import { createDakhala,listDakhala, deleteDakhala } from "../controllers/dakhalaMagani.controller.js";
+
 
 const router = Router();
 
@@ -36,8 +39,25 @@ router.delete("/news/:id", deleteNews);
 
 
 
+
+
+// Public submission endpoint
+router.post(
+  "/dakhala-magani",
+  upload.single("file"),
+  createDakhala
+);
+
 router.post("/upload-qr", upload.any(), uploadQR);
 router.get("/qr", getQR);
+
+// Payment QR endpoints (single payment QR)
+router.post('/upload-payment-qr', upload.single('paymentQR'), uploadPaymentQR);
+router.get('/payment-qr', getPaymentQR);
+
+// Dakhala Magani submissions (admin)
+router.get('/dakhala', listDakhala);
+router.delete('/dakhala/:id', deleteDakhala);
 
 
 export default router;

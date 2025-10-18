@@ -10,6 +10,7 @@ export const uploadQR = wrapAsync(async (req, res) => {
 
   let panipattiData = null;
   let gharPattiData = null;
+  let paymentData = null;
 
   // check existing QR doc (we'll just update the first one)
   let qrDoc = await QR.findOne();
@@ -40,10 +41,24 @@ export const uploadQR = wrapAsync(async (req, res) => {
     );
   }
 
+  // ---- Upload Payment QR ----
+  const paymentFile = req.files?.find(f => f.fieldname === "paymentQR");
+  if (paymentFile) {
+    if (qrDoc?.paymentQR?.publicId) {
+      await deleteFromCloudinary(qrDoc.paymentQR.publicId);
+    }
+    paymentData = await uploadToCloudinary(
+      path.resolve(paymentFile.path),
+      `${req.gpName}/qrCodes`,
+      "paymentQR"
+    );
+  }
+
   if (!qrDoc) qrDoc = new QR();
 
-  if (panipattiData) qrDoc.panipattiQR = panipattiData;
-  if (gharPattiData) qrDoc.gharPattiQR = gharPattiData;
+  if (panipattiData) qrDoc.panipattiQR = { url: panipattiData.url, publicId: panipattiData.public_id || panipattiData.publicId };
+  if (gharPattiData) qrDoc.gharPattiQR = { url: gharPattiData.url, publicId: gharPattiData.public_id || gharPattiData.publicId };
+  if (paymentData) qrDoc.paymentQR = { url: paymentData.url, publicId: paymentData.public_id || paymentData.publicId };
 
   await qrDoc.save();
 

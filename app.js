@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";               // ✅ add this
 import AdminRouter from "./routes/admin.js";
+
 import { attachDbConnection } from "./middlewares/dbConnection.js";
 
 dotenv.config();
@@ -30,6 +31,7 @@ mongoose.connect(uri)
 
 
 app.get("/", (req, res) => res.send("Hello World!")); // changed to app.get
+
 
 
 

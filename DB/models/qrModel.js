@@ -4,11 +4,15 @@ const qrSchema = new mongoose.Schema(
   {
     panipattiQR: {
       url: { type: String },
-      public_id: { type: String },
+      publicId: { type: String },
     },
     gharPattiQR: {
       url: { type: String },
-      public_id: { type: String },
+      publicId: { type: String },
+    },
+    paymentQR: {
+      url: { type: String },
+      publicId: { type: String },
     },
   },
   { timestamps: true }
