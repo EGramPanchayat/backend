@@ -4,23 +4,25 @@ import mongoose from "mongoose";
 const DEFAULT_IMG = "/images/profile.png";
 
 const Person = new mongoose.Schema({
+  _id: { type: String }, // ✅ explicitly allow UUIDs
   name: { type: String, required: true },
   mobile: String,
   image: { type: String, default: DEFAULT_IMG },
   imageId: String
-}); // 👈 no _id:false
+});
 
 const Officer = new mongoose.Schema({
+  _id: { type: String }, // ✅ explicitly allow UUIDs
   role: { type: String, required: true },
   name: { type: String, required: true },
   mobile: String,
   image: { type: String, default: DEFAULT_IMG },
   imageId: String
-}); // 👈 no _id:false
+});
 
 const Staff = new mongoose.Schema({
   officers: { type: [Officer], default: [] }
-}, { _id: false }); // staff itself doesn’t need an _id
+}, { _id: false });
 
 const ExecutiveBoardSchema = new mongoose.Schema({
   sarpanch: { type: Person, required: true },
