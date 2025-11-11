@@ -21,7 +21,8 @@ app.use(cors({                       // ✅ allow your frontend origin here
            "https://www.gpambewadi.in",
            "https://www.gpshelagi.in", 
            "https://www.gptagarkheda.in",
-           "https://gptadawale.in"], // or your deployed frontend URL
+           "https://gptadawale.in",
+            "https://gpshirwal.in"], // or your deployed frontend URL
   credentials: true,                 // if you send cookies/auth headers
 }));
 app.use(express.json());
