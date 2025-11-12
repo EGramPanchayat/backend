@@ -1,15 +1,19 @@
 import { Router } from "express";
+import pdfUpload from '../middlewares/pdfMulter.js';
 import { login, checkAuth, logout } from "../controllers/adminAuth.controller.js";
 import { upload } from "../middlewares/multerMiddleWare.js";
 import { upsertExecutiveBoard, getExecutiveBoard } from "../controllers/executiveBoard.controller.js";
 import { getDevWorks, createDevWorks, deleteDevWork } from "../controllers/developementWorks.controller.js";
 import { createNews, getNews, deleteNews } from "../controllers/news.controller.js";
+import { createNotice, getNotices, deleteNotice } from "../controllers/notices.controller.js";
 import { uploadQR, getQR } from "../controllers/qr.controller.js";
 import { uploadPaymentQR, getPaymentQR } from '../controllers/dakhalaMagani.controller.js';
 import { createDakhala,listDakhala, deleteDakhala } from "../controllers/dakhalaMagani.controller.js";
 
 
 const router = Router();
+
+// pdfUpload (multer instance configured for PDFs) imported from middleware
 
 // ---- Auth ----
 router.post("/login", login);
@@ -35,6 +39,13 @@ router.route("/news")
   .post(createNews);
 
 router.delete("/news/:id", deleteNews);
+
+
+router.route('/notices')
+  .get(getNotices)
+  .post(pdfUpload.single('pdfFile'), createNotice);
+
+router.delete('/notices/:id', deleteNotice);
 
 
 
