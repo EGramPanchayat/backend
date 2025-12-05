@@ -1,7 +1,7 @@
 import wrapAsync from '../utils/wrapAsync.js';
 import ExpressError from '../utils/ExpressError.js';
 import ParipatrakModel from '../DB/models/notices.js';
-import { uploadToCloudinary, deleteFromCloudinary } from '../middlewares/cloudinaryUpload.js';
+import { uploadToCloudinary, deleteFromCloudinary } from '../middlewares/cloudinaryUploadPDF.js';
 import mongoose from 'mongoose';
 
 /** POST /notices - create a new notice (pdf optional) */
