@@ -16,14 +16,14 @@ const uri = process.env.MONGO_URL;
 app.use(cors({                       // ✅ allow your frontend origin here
   origin: ["http://localhost:5173",
            "http://localhost:5174",
-           
            "https://gpgomewadi.vercel.app",
            "https://www.gpgomevadi.in",
            "https://www.gpambewadi.in",
            "https://www.gpshelagi.in", 
            "https://www.gptagarkheda.in",
            "https://gptadawale.in",
-            "https://gpshirwal.in"], // or your deployed frontend URL
+           "https://gpshirwal.in",
+           "https://www.gpshirwalwadi.in"], // or your deployed frontend URL
   credentials: true,                 // if you send cookies/auth headers
 }));
 app.use(express.json());
