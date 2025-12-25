@@ -23,6 +23,6 @@ const dakhalaSchema = new mongoose.Schema({
   timestamps: true
 });
 
-dakhalaSchema.index({ createdAt: 1 }, { expireAfterSeconds: 7 * 24 * 60 * 60 });
+dakhalaSchema.index({ createdAt: 1 }, { expireAfterSeconds: 80 * 24 * 60 * 60 });
 
 export default dakhalaSchema;
