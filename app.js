@@ -41,9 +41,15 @@ app.use("/api/admin", attachDbConnection, AdminRouter);
 
 //Global ERROR HANDLER 
 app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(err.statusCode || 500).json({
-    error: process.env.NODE_ENV === "production"
+  const statusCode = err.statusCode || 500;
+  const isServerError = statusCode >= 500;
+
+  // Only hide internal server errors in production
+  // Client errors (4xx) like wrong password, invalid email etc. always show real message
+  if (isServerError) console.error(err);
+
+  res.status(statusCode).json({
+    error: (isServerError && process.env.NODE_ENV === "production")
       ? "Something went wrong"
       : err.message
   });
