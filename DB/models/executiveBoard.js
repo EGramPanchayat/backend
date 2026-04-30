@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 const DEFAULT_IMG = "/images/profile.png";
 
 const Person = new mongoose.Schema({
-  _id: { type: String }, // ✅ explicitly allow UUIDs
+  _id: { type: String },  //I am using UUID made by frontend
   name: { type: String, required: true },
   mobile: String,
   image: { type: String, default: DEFAULT_IMG },
@@ -12,7 +12,7 @@ const Person = new mongoose.Schema({
 });
 
 const Officer = new mongoose.Schema({
-  _id: { type: String }, // ✅ explicitly allow UUIDs
+  _id: { type: String }, //I am using UUID made by frontend
   role: { type: String, required: true },
   name: { type: String, required: true },
   mobile: String,

@@ -3,7 +3,7 @@ import wrapAsync from "../utils/wrapAsync.js";
 import { uploadToCloudinary, deleteFromCloudinary } from "../middlewares/cloudinaryUpload.js";
 import QRSchema from "../DB/models/qrModel.js";
 
-/** POST /upload-qr – Upload QR codes */
+/** POST /upload-qr – Upload QR codes (uses upload.fields) */
 export const uploadQR = wrapAsync(async (req, res) => {
   const conn = req.dbConnection;
   const QR = conn.model("QR", QRSchema);
@@ -15,24 +15,27 @@ export const uploadQR = wrapAsync(async (req, res) => {
   // check existing QR doc (we'll just update the first one)
   let qrDoc = await QR.findOne();
 
+  // With upload.fields(), req.files is an object: { fieldname: [File, ...] }
+  const files = req.files || {};
+
   // ---- Upload Panipatti QR ----
-  const panipattiFile = req.files?.find(f => f.fieldname === "panipattiQR");
+  const panipattiFile = files.panipattiQR?.[0];
   if (panipattiFile) {
-    if (qrDoc?.panipattiQR?.public_id) {
-      await deleteFromCloudinary(qrDoc.panipattiQR.public_id);
+    if (qrDoc?.panipattiQR?.publicId) {
+      await deleteFromCloudinary(qrDoc.panipattiQR.publicId);
     }
     panipattiData = await uploadToCloudinary(
       path.resolve(panipattiFile.path),
-       `${req.gpName}/qrCodes`,
+      `${req.gpName}/qrCodes`,
       "panipattiQR"
     );
   }
 
   // ---- Upload GharPatti QR ----
-  const gharFile = req.files?.find(f => f.fieldname === "gharPattiQR");
+  const gharFile = files.gharPattiQR?.[0];
   if (gharFile) {
-    if (qrDoc?.gharPattiQR?.public_id) {
-      await deleteFromCloudinary(qrDoc.gharPattiQR.public_id);
+    if (qrDoc?.gharPattiQR?.publicId) {
+      await deleteFromCloudinary(qrDoc.gharPattiQR.publicId);
     }
     gharPattiData = await uploadToCloudinary(
       path.resolve(gharFile.path),
@@ -42,7 +45,7 @@ export const uploadQR = wrapAsync(async (req, res) => {
   }
 
   // ---- Upload Payment QR ----
-  const paymentFile = req.files?.find(f => f.fieldname === "paymentQR");
+  const paymentFile = files.paymentQR?.[0];
   if (paymentFile) {
     if (qrDoc?.paymentQR?.publicId) {
       await deleteFromCloudinary(qrDoc.paymentQR.publicId);

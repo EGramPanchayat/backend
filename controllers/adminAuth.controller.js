@@ -1,55 +1,150 @@
+import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import ExpressError from "../utils/ExpressError.js";
-import UserSchema from "../DB/models/userModel.js"; // Mongoose schema only
+import UserSchema from "../DB/models/userModel.js";
+import wrapAsync from "../utils/wrapAsync.js";
+import { getCookieOptions, getCookieClearOptions } from "../middlewares/authMiddleware.js";
 
+// Generate Access Token
+function signAccessToken(user) {
+  return jwt.sign(
+    { id: user._id, email: user.email },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "15m" }
+  );
+}
+
+//Generate Refresh Token
+function signRefreshToken(user) {
+  return jwt.sign(
+    { id: user._id },
+    process.env.REFRESH_TOKEN_SECRET,
+    { expiresIn: process.env.REFRESH_TOKEN_EXPIRY || "7d" }
+  );
+}
+
+// set both cookies on the response
+function setAuthCookies(res, user) {
+  const accessToken = signAccessToken(user);
+  const refreshToken = signRefreshToken(user);
+  const opts = getCookieOptions();
+
+  // Access token cookie — short-lived (15 minutes)
+  res.cookie("accessToken", accessToken, {
+    ...opts,
+    maxAge: 1000 * 60 * 15, // 15 minutes
+  });
+
+  // Refresh token cookie — long-lived (7 days)
+  res.cookie("refreshToken", refreshToken, {
+    ...opts,
+    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+  });
+}
+
+// ──────────────────────────────────────────────
 // POST /api/admin/login
-export const login = async (req, res, next) => {
-  try {
-    const { email, password } = req.body;
-    const conn = req.dbConnection; // Dynamic GP-specific DB
-    const User = conn.model("User", UserSchema); // attach model to this connection
+// Validates credentials, issues access + refresh tokens
+// ──────────────────────────────────────────────
+export const login = wrapAsync(async (req, res) => {
+  const { email, password } = req.body;
 
-    // Find user
-    const user = await User.findOne({ email });
-    if (!user) throw new ExpressError("Invalid email", 401);
-
-    // Check password
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) throw new ExpressError("Invalid password", 401);
-
-    // Set httpOnly cookie
-   res.cookie("adminAuth", user._id.toString(), {
-      httpOnly: true,
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 1000 * 60 * 60 * 2,
-    });
-
-
-    res.json({ success: true });
-  } catch (err) {
-    next(err);
+  if (!email || !password) {
+    throw new ExpressError("Email and password are required", 400);
   }
-};
 
+  const conn = req.dbConnection;
+  const User = conn.model("User", UserSchema);
+
+  const user = await User.findOne({ email });
+  if (!user) throw new ExpressError("Invalid email or password", 401);
+
+  const match = await bcrypt.compare(password, user.password);
+  if (!match) throw new ExpressError("Invalid email or password", 401);
+
+  setAuthCookies(res, user);
+  res.json({ success: true, message: "Login successful" });
+});
+
+// ──────────────────────────────────────────────
+// POST /api/admin/refresh
+// Uses the long-lived refresh token to issue a new access token.
+// Called by the frontend when a 401 is received.
+// ──────────────────────────────────────────────
+export const refreshToken = wrapAsync(async (req, res) => {
+  const token = req.cookies?.refreshToken;
+  if (!token) {
+    throw new ExpressError("No refresh token — please log in", 401);
+  }
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+  } catch (err) {
+    // Refresh token expired or tampered — full re-login required
+    res.clearCookie("accessToken", getCookieClearOptions());
+    res.clearCookie("refreshToken", getCookieClearOptions());
+    throw new ExpressError("Refresh token expired — please log in again", 401);
+  }
+
+  // Verify user still exists
+  const conn = req.dbConnection;
+  const User = conn.model("User", UserSchema);
+  const user = await User.findById(decoded.id).select("-password");
+
+  if (!user) {
+    res.clearCookie("accessToken", getCookieClearOptions());
+    res.clearCookie("refreshToken", getCookieClearOptions());
+    throw new ExpressError("User no longer exists", 401);
+  }
+
+  // Issue fresh access token only (refresh token stays valid until it expires)
+  const newAccessToken = signAccessToken(user);
+  const opts = getCookieOptions();
+  res.cookie("accessToken", newAccessToken, {
+    ...opts,
+    maxAge: 1000 * 60 * 15,
+  });
+
+  res.json({ success: true, message: "Token refreshed" });
+});
+
+// ──────────────────────────────────────────────
 // GET /api/admin/check
-export const checkAuth = async (req, res, next) => {
+// Verifies if the current access token is still valid.
+// ──────────────────────────────────────────────
+export const checkAuth = wrapAsync(async (req, res) => {
+  const token = req.cookies?.accessToken;
+  if (!token) return res.json({ ok: false });
+
   try {
-    const ok = Boolean(req.cookies.adminAuth);
-  
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    res.json({ ok });
-  } catch (err) {
-    next(err);
+    const conn = req.dbConnection;
+    if (conn) {
+      const User = conn.model("User", UserSchema);
+      const user = await User.findById(decoded.id).select("_id email");
+      if (!user) {
+        res.clearCookie("accessToken", getCookieClearOptions());
+        return res.json({ ok: false });
+      }
+    }
+
+    return res.json({ ok: true });
+  } catch {
+    // Access token expired — but refresh token may still be valid
+    // Frontend should call /refresh, not re-login immediately
+    return res.json({ ok: false });
   }
-};
+});
 
+// ──────────────────────────────────────────────
 // POST /api/admin/logout
-export const logout = async (req, res, next) => {
-  try {
-    res.clearCookie("adminAuth");
-    res.json({ success: true });
-  } catch (err) {
-    next(err);
-  }
-};
+// Clears BOTH cookies.
+// ──────────────────────────────────────────────
+export const logout = wrapAsync(async (req, res) => {
+  res.clearCookie("accessToken", getCookieClearOptions());
+  res.clearCookie("refreshToken", getCookieClearOptions());
+
+  res.json({ success: true, message: "Logged out successfully" });
+});

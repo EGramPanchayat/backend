@@ -1,11 +1,11 @@
-// controllers/executiveBoardController.js
+
 import wrapAsync from "../utils/wrapAsync.js";
 import { uploadToCloudinary, deleteFromCloudinary } from "../middlewares/cloudinaryUpload.js";
 import ExpressError from "../utils/ExpressError.js";
 import ExecutiveBoardSchema from "../DB/models/executiveBoard.js";
 
-/** POST /exboard-karyakari-mandal */
-export const upsertExecutiveBoard = wrapAsync(async (req, res) => {
+
+export const changeExecutiveBoard = wrapAsync(async (req, res) => {
   const conn = req.dbConnection;
   const ExecutiveBoard = conn.model("ExecutiveBoard", ExecutiveBoardSchema);
 
@@ -36,7 +36,7 @@ export const upsertExecutiveBoard = wrapAsync(async (req, res) => {
   if (board) {
     if (body.deletedMemberIds?.length) {
       for (const id of body.deletedMemberIds) {
-        const m = board.members.id(id);
+        const m = board.members.find(m => m._id.toString() === id);
         if (m) {
           if (m.imageId) await deleteFromCloudinary(m.imageId);
           m.deleteOne();
@@ -45,7 +45,7 @@ export const upsertExecutiveBoard = wrapAsync(async (req, res) => {
     }
     if (body.deletedOfficerIds?.length) {
       for (const id of body.deletedOfficerIds) {
-        const o = board.staff?.officers.id(id);
+        const o = board.staff?.officers.find(o => o._id.toString() === id);
         if (o) {
           if (o.imageId) await deleteFromCloudinary(o.imageId);
           o.deleteOne();
@@ -143,9 +143,9 @@ export const upsertExecutiveBoard = wrapAsync(async (req, res) => {
   // ------------------ Save / Update ------------------
   board = board
     ? await ExecutiveBoard.findByIdAndUpdate(board._id, payload, {
-        new: true,
-        runValidators: true,
-      })
+      new: true,
+      runValidators: true,
+    })
     : await ExecutiveBoard.create(payload);
 
   res.json(board);

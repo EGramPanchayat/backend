@@ -6,10 +6,8 @@ import path from 'path';
 import QRSchema from '../DB/models/qrModel.js';
 
 
-// ✅ POST /janmacha-dakhala - create new submission
+// POST /janmacha-dakhala - create new submission
 export const createDakhala = wrapAsync(async (req, res) => {
-
-
 
   const conn = req.dbConnection || req.app?.get('dbConnection') || req.db;
   const Dakhala =
@@ -53,7 +51,7 @@ export const createDakhala = wrapAsync(async (req, res) => {
     }
 
     // Upload payment image to Cloudinary
-  const gpName = req.headers['x-gp-name'] || 'default_gp';
+    const gpName = req.headers['x-gp-name'] || 'default_gp';
     const folder = `${gpName}/dakhalaPayments`;
     const uploadRes = await uploadToCloudinary(
       req.file.path,
@@ -105,12 +103,12 @@ export const createDakhala = wrapAsync(async (req, res) => {
   res.status(201).json({
     success: true,
     id: created._id,
-    message: 'Submission received successfully ✅',
+    message: 'Submission received successfully ',
   });
 });
 
 
-// ✅ GET /api/admin/dakhala - list submissions
+// GET /api/admin/dakhala - list submissions
 export const listDakhala = wrapAsync(async (req, res) => {
   const conn = req.dbConnection;
   const Dakhala = conn.model('DakhalaMagani', DakhalaSchema);
@@ -140,7 +138,7 @@ export const listDakhala = wrapAsync(async (req, res) => {
 });
 
 
-// ✅ DELETE /api/admin/dakhala/:id
+// DELETE /api/admin/dakhala/:id
 export const deleteDakhala = wrapAsync(async (req, res) => {
   const conn = req.dbConnection;
   const Dakhala = conn.model('DakhalaMagani', DakhalaSchema);

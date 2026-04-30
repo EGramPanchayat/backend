@@ -1,33 +1,36 @@
-// middlewares/dbConnection.js
 import mongoose from "mongoose";
 import ExpressError from "../utils/ExpressError.js";
+import wrapAsync from "../utils/wrapAsync.js";
 
 const connections = {};
 
-export const attachDbConnection = async (req, res, next) => {
-  try {
-    const gpName = req.headers["x-gp-name"];
-    if (!gpName) return next(new ExpressError("GP name header missing", 400));
 
-    if (!connections[gpName]) {
-      if (!process.env.MONGO_URL.includes("<GP_NAME>")) {
-        return next(new ExpressError("MONGO_URL must include <GP_NAME>", 500));
-      }
+const ALLOWED_GP_NAMES = process.env.ALLOWED_GP_NAMES
+  ? process.env.ALLOWED_GP_NAMES.split(",").map(n => n.trim()).filter(Boolean)
+  : [];
 
-      const uri = process.env.MONGO_URL.replace("<GP_NAME>", gpName);
+export const attachDbConnection = wrapAsync(async (req, res, next) => {
+  const gpName = req.headers["gp-name"];
+  if (!gpName) throw new ExpressError("GP name header missing", 400);
 
-      console.log(`🔌 Connecting to DB: ${gpName}`);
-      const conn = await mongoose.createConnection(uri).asPromise();
-
-      connections[gpName] = conn;
-      console.log(`✅ Connected to DB: ${gpName}`);
-    }
-
-    req.dbConnection = connections[gpName];
-    req.gpName = gpName;
-    next();
-  } catch (err) {
-    console.error("DB connection error:", err.message);
-    next(err);
+ 
+  if (!ALLOWED_GP_NAMES.includes(gpName)) {
+    throw new ExpressError("Invalid GP name", 403);
   }
-};
+
+  if (!connections[gpName]) {
+    const uri = process.env.MONGO_URL.replace("<GP_NAME>", gpName);
+
+    console.log(`Connecting to DB: ${gpName}`);
+    const conn = await mongoose.createConnection(uri).asPromise();
+
+    connections[gpName] = conn;
+    console.log(`Connected to DB: ${gpName}`);
+  }
+
+  req.dbConnection = connections[gpName];
+  req.gpName = gpName;
+
+  
+  next();
+});

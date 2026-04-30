@@ -9,7 +9,7 @@ export const getDevWorks = wrapAsync(async (req, res) => {
   const DevelopementWork = conn.model("DevelopementWork", DevelopementWorkSchema);
 
   const works = await DevelopementWork.find().sort({ date: -1 });
-  
+
   res.json(works);
 });
 
