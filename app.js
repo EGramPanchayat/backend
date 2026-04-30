@@ -31,11 +31,12 @@ app.use(cookieParser());
 
 
 
-
 app.get("/", (req, res) => res.send("GP MANAGEMENT SYSTEM!")); 
 
+// Public routes — no auth required
+app.use("/api", attachDbConnection, PublicRouter);
 
-app.use("/api/admin", attachDbConnection, PublicRouter);
+// Admin routes — auth required (requireAuth is inside AdminRouter)
 app.use("/api/admin", attachDbConnection, AdminRouter);
 
 //Global ERROR HANDLER 
