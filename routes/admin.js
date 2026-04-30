@@ -2,7 +2,7 @@ import { Router } from "express";
 import { login, checkAuth, logout, refreshToken } from "../controllers/adminAuth.controller.js";
 import { requireAuth } from "../middlewares/authMiddleware.js";
 import { imageUpload, pdfUpload } from "../middlewares/multerConfig.js";
-import { changeExecutiveBoard, getExecutiveBoard } from "../controllers/executiveBoard.controller.js";
+
 import { getDevWorks, createDevWorks, deleteDevWork } from "../controllers/developementWorks.controller.js";
 import { createNews, getNews, deleteNews } from "../controllers/news.controller.js";
 import { createNotice, getNotices, deleteNotice } from "../controllers/notices.controller.js";
@@ -20,17 +20,10 @@ router.post("/refresh", refreshToken);
 // Authentication is necessary for all the routes that lies below this line
 router.use(requireAuth);
 
-// Executive board
-router.route("/executive-board")
-  .get(getExecutiveBoard)
-  .post(
-    imageUpload.any(),
-    changeExecutiveBoard
-  );
+
 
 //developement works
 router.route("/devworks")
-  .get(getDevWorks)
   .post(
     imageUpload.any(),  // Dynamic field names: works[0][image], works[1][image]...
     createDevWorks
@@ -38,14 +31,15 @@ router.route("/devworks")
 router.delete("/devworks/:id", deleteDevWork);
 
 // news
-router.route("/news")
-  .get(getNews)
-  .post(createNews);
+router.route("/news").post(createNews);
 router.delete("/news/:id", deleteNews);
+
+
+
+
 
 // notices
 router.route("/notices")
-  .get(getNotices)
   .post(pdfUpload.single("pdfFile"), createNotice);
 router.delete("/notices/:id", deleteNotice);
 
