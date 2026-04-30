@@ -23,7 +23,7 @@ export const createNotice = wrapAsync(async (req, res) => {
 
   // If a file was uploaded via multer, upload to Cloudinary
   if (req.file) {
-    const gpName = req.headers['x-gp-name'] || req.gpName || 'default_gp';
+    const gpName = req.gpName;
     const folder = `${gpName}/notices`;
     const uploadRes = await uploadToCloudinary(req.file.path, folder, `notice_${Date.now()}`);
     if (!uploadRes?.url || !uploadRes?.public_id) {

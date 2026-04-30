@@ -51,7 +51,7 @@ export const createDakhala = wrapAsync(async (req, res) => {
     }
 
     // Upload payment image to Cloudinary
-    const gpName = req.headers['x-gp-name'] || 'default_gp';
+    const gpName = req.gpName;
     const folder = `${gpName}/dakhalaPayments`;
     const uploadRes = await uploadToCloudinary(
       req.file.path,
@@ -66,7 +66,7 @@ export const createDakhala = wrapAsync(async (req, res) => {
 
   } else if (req.file) {
     // If file is uploaded for fee-exempt type, still upload and store
-    const gpName = req.headers['x-gp-name'] || 'default_gp';
+    const gpName = req.gpName;
     const folder = `${gpName}/dakhalaPayments`;
     const uploadRes = await uploadToCloudinary(
       req.file.path,
