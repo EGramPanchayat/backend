@@ -2,9 +2,9 @@ import { Router } from "express";
 import { login, checkAuth, logout, refreshToken } from "../controllers/adminAuth.controller.js";
 import { requireAuth } from "../middlewares/authMiddleware.js";
 import { imageUpload, pdfUpload } from "../middlewares/multerConfig.js";
-import { changeExecutiveBoard, getExecutiveBoardData } from "../controllers/executiveBoard.controller.js";
+import { changeExecutiveBoard, getExecutiveBoard } from "../controllers/executiveBoard.controller.js";
 import { getDevWorks, createDevWorks, deleteDevWork } from "../controllers/developementWorks.controller.js";
-import { createNews, getNewsData, deleteNews } from "../controllers/news.controller.js";
+import { createNews, getNews, deleteNews } from "../controllers/news.controller.js";
 import { createNotice, getNotices, deleteNotice } from "../controllers/notices.controller.js";
 import { uploadQR } from "../controllers/qr.controller.js";
 import { uploadPaymentQR } from "../controllers/dakhalaMagani.controller.js";
@@ -22,7 +22,7 @@ router.use(requireAuth);
 
 // Executive board
 router.route("/executive-board")
-  .get(getExecutiveBoardData)
+  .get(getExecutiveBoard)
   .post(
     imageUpload.any(),
     changeExecutiveBoard
@@ -39,7 +39,7 @@ router.delete("/devworks/:id", deleteDevWork);
 
 // news
 router.route("/news")
-  .get(getNewsData)
+  .get(getNews)
   .post(createNews);
 router.delete("/news/:id", deleteNews);
 
