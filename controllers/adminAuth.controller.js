@@ -23,11 +23,15 @@ function signRefreshToken(user) {
   );
 }
 
-// set both cookies on the response
-function setAuthCookies(res, user) {
+// set both cookies on the response and persist refresh token in DB
+async function setAuthCookies(res, user, conn) {
   const accessToken = signAccessToken(user);
   const refreshToken = signRefreshToken(user);
   const opts = getCookieOptions();
+
+  // Save refresh token in the user document
+  const User = conn.model("User", UserSchema);
+  await User.findByIdAndUpdate(user._id, { refreshToken });
 
   // Access token cookie — short-lived (15 minutes)
   res.cookie("accessToken", accessToken, {
@@ -62,7 +66,7 @@ export const login = wrapAsync(async (req, res) => {
   const match = await bcrypt.compare(password, user.password);
   if (!match) throw new ExpressError("Invalid email or password", 401);
 
-  setAuthCookies(res, user);
+  await setAuthCookies(res, user, conn);
   res.json({ success: true, message: "Login successful" });
 });
 
@@ -96,6 +100,13 @@ export const refreshToken = wrapAsync(async (req, res) => {
     res.clearCookie("accessToken", getCookieClearOptions());
     res.clearCookie("refreshToken", getCookieClearOptions());
     throw new ExpressError("User no longer exists", 401);
+  }
+
+  // Verify the refresh token matches what's stored in the DB
+  if (user.refreshToken !== token) {
+    res.clearCookie("accessToken", getCookieClearOptions());
+    res.clearCookie("refreshToken", getCookieClearOptions());
+    throw new ExpressError("Refresh token revoked — please log in again", 401);
   }
 
   // Issue fresh access token only (refresh token stays valid until it expires)
@@ -143,6 +154,24 @@ export const checkAuth = wrapAsync(async (req, res) => {
 // Clears BOTH cookies.
 // ──────────────────────────────────────────────
 export const logout = wrapAsync(async (req, res) => {
+  // Clear refresh token from DB (if user is identified)
+  const token = req.cookies?.accessToken || req.cookies?.refreshToken;
+  if (token) {
+    try {
+      const secret = req.cookies?.accessToken
+        ? process.env.JWT_SECRET
+        : process.env.REFRESH_TOKEN_SECRET;
+      const decoded = jwt.verify(token, secret);
+      const conn = req.dbConnection;
+      if (conn) {
+        const User = conn.model("User", UserSchema);
+        await User.findByIdAndUpdate(decoded.id, { refreshToken: null });
+      }
+    } catch {
+      // Token invalid/expired — still clear cookies below
+    }
+  }
+
   res.clearCookie("accessToken", getCookieClearOptions());
   res.clearCookie("refreshToken", getCookieClearOptions());
 
