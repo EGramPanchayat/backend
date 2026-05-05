@@ -20,4 +20,4 @@ const paripatrakSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("Paripatrak", paripatrakSchema);
+export default paripatrakSchema;

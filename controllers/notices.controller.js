@@ -1,6 +1,6 @@
 import wrapAsync from '../utils/wrapAsync.js';
 import ExpressError from '../utils/ExpressError.js';
-import ParipatrakModel from '../DB/models/notices.js';
+import paripatrakSchema from '../DB/models/notices.js';
 import { uploadToCloudinary, deleteFromCloudinary } from '../middlewares/cloudinaryUploadPDF.js';
 import mongoose from 'mongoose';
 
@@ -10,8 +10,8 @@ export const createNotice = wrapAsync(async (req, res) => {
 
   // Ensure we can construct a model bound to a potential per-request connection
   const Paripatrak = (conn && conn.model)
-    ? conn.model('Paripatrak', ParipatrakModel.schema)
-    : mongoose.model('Paripatrak', ParipatrakModel.schema);
+    ? conn.model('Paripatrak', paripatrakSchema)
+    : mongoose.model('Paripatrak', paripatrakSchema);
 
   const { description } = req.body || {};
   if (!description || description.toString().trim() === '') {
@@ -46,8 +46,8 @@ export const createNotice = wrapAsync(async (req, res) => {
 export const getNotices = wrapAsync(async (req, res) => {
   const conn = req.dbConnection || req.app?.get('dbConnection') || req.db;
   const Paripatrak = (conn && conn.model)
-    ? conn.model('Paripatrak', ParipatrakModel.schema)
-    : mongoose.model('Paripatrak', ParipatrakModel.schema);
+    ? conn.model('Paripatrak', paripatrakSchema)
+    : mongoose.model('Paripatrak', paripatrakSchema);
 
   const list = await Paripatrak.find().sort({ createdAt: -1 });
   res.json(list);
@@ -57,8 +57,8 @@ export const getNotices = wrapAsync(async (req, res) => {
 export const deleteNotice = wrapAsync(async (req, res) => {
   const conn = req.dbConnection || req.app?.get('dbConnection') || req.db;
   const Paripatrak = (conn && conn.model)
-    ? conn.model('Paripatrak', ParipatrakModel.schema)
-    : mongoose.model('Paripatrak', ParipatrakModel.schema);
+    ? conn.model('Paripatrak', paripatrakSchema)
+    : mongoose.model('Paripatrak', paripatrakSchema);
 
   const { id } = req.params;
   if (!id) throw new ExpressError('Notice id is required', 400);

@@ -18,45 +18,27 @@ export const createDevWorks = wrapAsync(async (req, res) => {
   const conn = req.dbConnection;
   const DevelopementWork = conn.model("DevelopementWork", DevelopementWorkSchema);
 
-  const works = Array.isArray(req.body.works) ? req.body.works : [];
-  const groupedFiles = {};
+  const { title, description } = req.body;
+  if (!title || !description) throw new ExpressError("Title and description are required", 400);
 
-  (req.files || []).forEach(file => {
-    const m = file.fieldname.match(/works\[(\d+)\]\[image\]/);
-    if (m) groupedFiles[m[1]] = file;
+  // imageUpload.any() puts files in req.files array
+  const file = req.file || (req.files && req.files[0]);
+  if (!file) throw new ExpressError("Image is required", 400);
+
+  const uploadRes = await uploadToCloudinary(
+    file.path,
+    `${req.gpName}/devworks`,
+    `devwork_${Date.now()}`
+  );
+  if (!uploadRes) throw new ExpressError("Image upload failed", 500);
+
+  const saved = await DevelopementWork.create({
+    title,
+    description,
+    date: new Date(),
+    image: { url: uploadRes.url, publicId: uploadRes.public_id },
   });
 
-  const worksToSave = [];
-
-  for (let i = 0; i < works.length; i++) {
-    const w = works[i];
-    if (!w.title || !w.description) continue;
-
-    let image = { url: "", publicId: "" };
-
-    if (groupedFiles[i]) {
-      const uploadRes = await uploadToCloudinary(
-        groupedFiles[i].path,
-        `${req.gpName}/devworks`,
-        `devwork_${Date.now()}`
-      );
-      if (!uploadRes) throw new ExpressError("Image upload failed", 500);
-      image = { url: uploadRes.url, publicId: uploadRes.public_id };
-    } else {
-      throw new ExpressError("Image is required for each work", 400);
-    }
-
-    worksToSave.push({
-      title: w.title,
-      description: w.description,
-      date: new Date(),
-      image
-    });
-  }
-
-  if (!worksToSave.length) throw new ExpressError("No valid works provided", 400);
-
-  const saved = await DevelopementWork.insertMany(worksToSave);
   res.status(201).json(saved);
 });
 
