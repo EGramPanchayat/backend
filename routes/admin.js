@@ -7,7 +7,6 @@ import { createDevWorks, deleteDevWork } from "../controllers/developementWorks.
 import { createNews, deleteNews } from "../controllers/news.controller.js";
 import { createNotice, deleteNotice } from "../controllers/notices.controller.js";
 import { uploadQR } from "../controllers/qr.controller.js";
-import { uploadPaymentQR } from "../controllers/dakhalaMagani.controller.js";
 import { listDakhala, deleteDakhala } from "../controllers/dakhalaMagani.controller.js";
 
 const router = Router();
@@ -47,8 +46,6 @@ router.post(
   uploadQR
 );
 
-// Payment QR (admin upload)
-router.post("/upload-payment-qr", imageUpload.single("paymentQR"), uploadPaymentQR);
 
 // Submissions (admin)
 router.get("/submissions", listDakhala);

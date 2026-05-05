@@ -2,8 +2,6 @@ import wrapAsync from '../utils/wrapAsync.js';
 import ExpressError from '../utils/ExpressError.js';
 import DakhalaSchema from '../DB/models/dakhalaMagani.js';
 import { uploadToCloudinary, deleteFromCloudinary } from '../middlewares/cloudinaryUpload.js';
-import path from 'path';
-import QRSchema from '../DB/models/qrModel.js';
 
 
 // POST /janmacha-dakhala - create new submission
@@ -156,33 +154,3 @@ export const deleteDakhala = wrapAsync(async (req, res) => {
   res.json({ success: true, message: 'Record deleted successfully ✅' });
 });
 
-
-// ---- Payment QR management (upload/get) ----
-export const uploadPaymentQR = wrapAsync(async (req, res) => {
-  const conn = req.dbConnection;
-  const QR = conn.model('QR', QRSchema);
-  let qrDoc = await QR.findOne();
-
-  const paymentFile = req.file || req.files?.find(f => f.fieldname === 'paymentQR');
-  if (!paymentFile) throw new ExpressError('No file uploaded', 400);
-
-  if (qrDoc?.paymentQR?.publicId) {
-    await deleteFromCloudinary(qrDoc.paymentQR.publicId);
-  }
-
-  const uploaded = await uploadToCloudinary(path.resolve(paymentFile.path), `${req.gpName || 'default_gp'}/qrCodes`, 'paymentQR');
-  if (!uploaded?.url) throw new ExpressError('Upload failed', 500);
-
-  if (!qrDoc) qrDoc = new QR();
-  qrDoc.paymentQR = { url: uploaded.url, publicId: uploaded.public_id || uploaded.publicId };
-  await qrDoc.save();
-  res.json({ success: true, qrDoc });
-});
-
-export const getPaymentQR = wrapAsync(async (req, res) => {
-  const conn = req.dbConnection;
-  const QR = conn.model('QR', QRSchema);
-  const qrDoc = await QR.findOne();
-
-  res.json(qrDoc?.paymentQR || {});
-});

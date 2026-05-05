@@ -2,7 +2,6 @@ import { Router } from "express";
 import { imageUpload } from "../middlewares/multerConfig.js";
 import { createDakhala } from "../controllers/dakhalaMagani.controller.js";
 import { getQR } from "../controllers/qr.controller.js";
-import { getPaymentQR } from "../controllers/dakhalaMagani.controller.js";
 import { getNews } from "../controllers/news.controller.js";
 import { getNotices } from "../controllers/notices.controller.js";
 import { getExecutiveBoard } from "../controllers/executiveBoard.controller.js";
@@ -18,7 +17,6 @@ router.get("/executive-board", getExecutiveBoard);
 
 // Payment QR and general QR
 router.get("/qr", getQR);
-router.get("/payment-qr", getPaymentQR);
 
 // Form applications (public submission)
 router.post("/certificate-request", imageUpload.single("file"), createDakhala);
