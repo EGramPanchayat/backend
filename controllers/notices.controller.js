@@ -1,17 +1,12 @@
 import wrapAsync from '../utils/wrapAsync.js';
 import ExpressError from '../utils/ExpressError.js';
-import paripatrakSchema from '../DB/models/notices.js';
+import ParipatrakSchema from '../DB/models/notices.js';
 import { uploadToCloudinary, deleteFromCloudinary } from '../middlewares/cloudinaryUploadPDF.js';
-import mongoose from 'mongoose';
 
-/** POST /notices - create a new notice (pdf optional) */
+
 export const createNotice = wrapAsync(async (req, res) => {
-  const conn = req.dbConnection || req.app?.get('dbConnection') || req.db;
-
-  // Ensure we can construct a model bound to a potential per-request connection
-  const Paripatrak = (conn && conn.model)
-    ? conn.model('Paripatrak', paripatrakSchema)
-    : mongoose.model('Paripatrak', paripatrakSchema);
+  const conn = req.dbConnection;
+  const Paripatrak = conn.model('Paripatrak', ParipatrakSchema);
 
   const { description } = req.body || {};
   if (!description || description.toString().trim() === '') {
@@ -21,7 +16,7 @@ export const createNotice = wrapAsync(async (req, res) => {
   let pdfUrl = undefined;
   let publicId = undefined;
 
-  // If a file was uploaded via multer, upload to Cloudinary
+  //if pdf attached
   if (req.file) {
     const gpName = req.gpName;
     const folder = `${gpName}/notices`;
@@ -42,23 +37,21 @@ export const createNotice = wrapAsync(async (req, res) => {
   res.status(201).json({ success: true, notice: doc });
 });
 
-/** GET /notices - list notices (most recent first) */
+
+//LIST NOTICES
 export const getNotices = wrapAsync(async (req, res) => {
-  const conn = req.dbConnection || req.app?.get('dbConnection') || req.db;
-  const Paripatrak = (conn && conn.model)
-    ? conn.model('Paripatrak', paripatrakSchema)
-    : mongoose.model('Paripatrak', paripatrakSchema);
+  const conn = req.dbConnection;
+  const Paripatrak = conn.model('Paripatrak', ParipatrakSchema);
 
   const list = await Paripatrak.find().sort({ createdAt: -1 });
   res.json(list);
 });
 
-/** DELETE /notices/:id - delete a notice and its PDF (if exists) */
+
+//DELETE NOTICES
 export const deleteNotice = wrapAsync(async (req, res) => {
-  const conn = req.dbConnection || req.app?.get('dbConnection') || req.db;
-  const Paripatrak = (conn && conn.model)
-    ? conn.model('Paripatrak', paripatrakSchema)
-    : mongoose.model('Paripatrak', paripatrakSchema);
+  const conn = req.dbConnection;
+  const Paripatrak = conn.model('Paripatrak', ParipatrakSchema);
 
   const { id } = req.params;
   if (!id) throw new ExpressError('Notice id is required', 400);
@@ -68,7 +61,6 @@ export const deleteNotice = wrapAsync(async (req, res) => {
 
   if (notice.publicId) {
     await deleteFromCloudinary(notice.publicId).catch((err) => {
-      // Non-fatal: log and continue deletion from DB
       console.warn('Failed to delete from Cloudinary:', err.message || err);
     });
   }
