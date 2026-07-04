@@ -18,7 +18,8 @@ export function getCookieClearOptions(req) {
 
 
 export const requireAuth = wrapAsync(async (req, res, next) => {
-  const token = req.cookies?.accessToken;
+  const authHeader = req.headers.authorization;
+  const token = req.cookies?.accessToken || (authHeader && authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : null);
 
   if (!token) {
     throw new ExpressError("Authentication required — please log in", 401);
@@ -79,7 +80,8 @@ export function getCookieOptions(req) {
 }
 
 export const requireUserAuth = wrapAsync(async (req, res, next) => {
-  const token = req.cookies?.userAccessToken;
+  const authHeader = req.headers.authorization;
+  const token = req.cookies?.userAccessToken || (authHeader && authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : null);
 
   if (!token) {
     throw new ExpressError("Authentication required — please log in with your mobile", 401);

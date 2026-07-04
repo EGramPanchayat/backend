@@ -85,6 +85,7 @@ export const verifyOtp = wrapAsync(async (req, res) => {
   res.json({
     success: true,
     message: "Login successful",
+    token,
     family: {
       familyId: family.familyId,
       mainMemberName: family.mainMemberName,
@@ -95,7 +96,8 @@ export const verifyOtp = wrapAsync(async (req, res) => {
 
 // Check auth status
 export const checkUserAuth = wrapAsync(async (req, res) => {
-  const token = req.cookies?.userAccessToken;
+  const authHeader = req.headers.authorization;
+  const token = req.cookies?.userAccessToken || (authHeader && authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : null);
   if (!token) return res.json({ ok: false });
 
   try {
