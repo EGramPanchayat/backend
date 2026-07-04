@@ -74,4 +74,47 @@ export function getCookieOptions() {
   };
 }
 
+export const requireUserAuth = wrapAsync(async (req, res, next) => {
+  const token = req.cookies?.userAccessToken;
+
+  if (!token) {
+    throw new ExpressError("Authentication required — please log in with your mobile", 401);
+  }
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (jwtErr) {
+    res.clearCookie("userAccessToken", getCookieClearOptions());
+    if (jwtErr.name === "TokenExpiredError") {
+      throw new ExpressError("Access token expired", 401);
+    }
+    throw new ExpressError("Invalid token — please log in again", 401);
+  }
+
+  const conn = req.dbConnection;
+  if (!conn) {
+    throw new ExpressError("Database connection not available", 500);
+  }
+
+  const FamilySchema = (await import("../DB/models/family.js")).default;
+  const Family = conn.model("Family", FamilySchema);
+  const family = await Family.findOne({ familyId: decoded.familyId });
+
+  if (!family) {
+    res.clearCookie("userAccessToken", getCookieClearOptions());
+    throw new ExpressError("Household no longer exists", 401);
+  }
+
+  req.user = {
+    _id: family._id,
+    familyId: family.familyId,
+    mobileNumber: family.mobileNumber,
+    mainMemberName: family.mainMemberName,
+    role: "villager"
+  };
+  
+  next();
+});
+
 

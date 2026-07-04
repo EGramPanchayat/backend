@@ -11,6 +11,11 @@ import { listDakhala, deleteDakhala } from "../controllers/dakhalaMagani.control
 import { upsertGovOfficials } from "../controllers/govOfficials.controller.js";
 import { updateSiteConfig } from "../controllers/siteConfig.controller.js";
 
+// VMS controllers
+import { getFamilies, createFamily, updateFamily, deleteFamily } from "../controllers/family.controller.js";
+import { assignTax, recordOfflinePayment, getPaymentsLogs } from "../controllers/tax.controller.js";
+import { getAdminApplications, updateApplicationStatus } from "../controllers/application.controller.js";
+
 const router = Router();
 
 // Auth routes (no requireAuth)
@@ -56,5 +61,20 @@ router.post(
 // Submissions (admin)
 router.get("/submissions", listDakhala);
 router.delete("/submissions/:id", deleteDakhala);
+
+// VMS Families CRUD
+router.get("/families", getFamilies);
+router.post("/families", createFamily);
+router.put("/families/:id", updateFamily);
+router.delete("/families/:id", deleteFamily);
+
+// VMS Taxes & Payments
+router.post("/taxes/assign", assignTax);
+router.post("/payments/offline", recordOfflinePayment);
+router.get("/payments/logs", getPaymentsLogs);
+
+// VMS User Certificate Applications
+router.get("/applications", getAdminApplications);
+router.post("/applications/:id/status", updateApplicationStatus);
 
 export default router;

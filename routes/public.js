@@ -9,6 +9,13 @@ import { getDevWorks } from "../controllers/developementWorks.controller.js";
 import { getSiteConfig } from "../controllers/siteConfig.controller.js";
 import { getGovOfficials } from "../controllers/govOfficials.controller.js";
 
+// VMS controllers
+import { requestOtp, verifyOtp, checkUserAuth, logoutUser } from "../controllers/userAuth.controller.js";
+import { lookupFamily } from "../controllers/family.controller.js";
+import { createRazorpayOrder, verifyRazorpayPayment } from "../controllers/tax.controller.js";
+import { submitApplication, getUserApplications } from "../controllers/application.controller.js";
+import { requireUserAuth } from "../middlewares/authMiddleware.js";
+
 const router = Router();
 
 // Public content endpoints (no auth required)
@@ -24,6 +31,21 @@ router.get("/qr", getQR);
 
 // Form applications (public submission)
 router.post("/certificate-request", imageUpload.single("file"), createDakhala);
+
+// Public VMS Lookup & Payments
+router.get("/family/lookup/:familyId", lookupFamily);
+router.post("/payments/order", createRazorpayOrder);
+router.post("/payments/verify", verifyRazorpayPayment);
+
+// Public VMS OTP Auth
+router.post("/auth/otp/request", requestOtp);
+router.post("/auth/otp/verify", verifyOtp);
+router.get("/auth/otp/check", checkUserAuth);
+router.post("/auth/otp/logout", logoutUser);
+
+// Villager Protected Endpoints (need requireUserAuth)
+router.post("/user/applications", requireUserAuth, submitApplication);
+router.get("/user/applications", requireUserAuth, getUserApplications);
 
 export default router;
 
