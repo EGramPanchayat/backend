@@ -6,10 +6,14 @@ import { getNews } from "../controllers/news.controller.js";
 import { getNotices } from "../controllers/notices.controller.js";
 import { getExecutiveBoard } from "../controllers/executiveBoard.controller.js";
 import { getDevWorks } from "../controllers/developementWorks.controller.js";
+import { getSiteConfig } from "../controllers/siteConfig.controller.js";
+import { getGovOfficials } from "../controllers/govOfficials.controller.js";
 
 const router = Router();
 
 // Public content endpoints (no auth required)
+router.get("/site-config", getSiteConfig);
+router.get("/gov-officials", getGovOfficials);
 router.get("/news", getNews);
 router.get("/notices", getNotices);
 router.get("/devworks", getDevWorks);
@@ -22,3 +26,4 @@ router.get("/qr", getQR);
 router.post("/certificate-request", imageUpload.single("file"), createDakhala);
 
 export default router;
+

@@ -8,6 +8,7 @@ import { createNews, deleteNews } from "../controllers/news.controller.js";
 import { createNotice, deleteNotice } from "../controllers/notices.controller.js";
 import { uploadQR } from "../controllers/qr.controller.js";
 import { listDakhala, deleteDakhala } from "../controllers/dakhalaMagani.controller.js";
+import { upsertGovOfficials } from "../controllers/govOfficials.controller.js";
 
 const router = Router();
 
@@ -22,6 +23,8 @@ router.use(requireAuth);
 
 // Executive board (admin write)
 router.post("/executive-board", imageUpload.any(), changeExecutiveBoard);
+
+router.post("/gov-officials", imageUpload.any(), upsertGovOfficials);
 
 // Development works (admin write/delete)
 router.post("/devworks", imageUpload.any(), createDevWorks);
