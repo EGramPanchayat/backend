@@ -9,6 +9,7 @@ import { createNotice, deleteNotice } from "../controllers/notices.controller.js
 import { uploadQR } from "../controllers/qr.controller.js";
 import { listDakhala, deleteDakhala } from "../controllers/dakhalaMagani.controller.js";
 import { upsertGovOfficials } from "../controllers/govOfficials.controller.js";
+import { updateSiteConfig } from "../controllers/siteConfig.controller.js";
 
 const router = Router();
 
@@ -25,6 +26,8 @@ router.use(requireAuth);
 router.post("/executive-board", imageUpload.any(), changeExecutiveBoard);
 
 router.post("/gov-officials", imageUpload.any(), upsertGovOfficials);
+
+router.post("/site-config", updateSiteConfig);
 
 // Development works (admin write/delete)
 router.post("/devworks", imageUpload.any(), createDevWorks);

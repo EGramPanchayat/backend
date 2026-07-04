@@ -11,3 +11,38 @@ export const getSiteConfig = wrapAsync(async (req, res) => {
 
   res.json(config);
 });
+
+// POST — Admin: update site configuration (stats, contact, village details)
+export const updateSiteConfig = wrapAsync(async (req, res) => {
+  const conn = req.dbConnection;
+  const SiteConfig = conn.model("SiteConfig", SiteConfigSchema);
+
+  const body = req.body;
+  let config = await SiteConfig.findOne();
+  if (!config) {
+    config = new SiteConfig();
+  }
+
+  // Update basic identity fields
+  if (body.villageName !== undefined) config.villageName = body.villageName;
+  if (body.gpName !== undefined) config.gpName = body.gpName;
+  if (body.taluka !== undefined) config.taluka = body.taluka;
+  if (body.district !== undefined) config.district = body.district;
+  if (body.pincode !== undefined) config.pincode = body.pincode;
+
+  // Update stats
+  if (body.stats && Array.isArray(body.stats)) {
+    config.stats = body.stats;
+  }
+
+  // Update contact
+  if (body.contact) {
+    config.contact = {
+      ...config.contact,
+      ...body.contact
+    };
+  }
+
+  await config.save();
+  res.json(config);
+});

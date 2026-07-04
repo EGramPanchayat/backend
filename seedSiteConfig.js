@@ -25,9 +25,9 @@ async function seed() {
   const SiteConfig = conn.model("SiteConfig", SiteConfigSchema);
   const GovOfficial = conn.model("GovernmentOfficial", GovernmentOfficialSchema);
 
-  // ═══════════════════════════════════════════════════
+  // ══════════════════════════════════════════════
   // 1. SITE CONFIG — All static village data
-  // ═══════════════════════════════════════════════════
+  // ══════════════════════════════════════════════
 
   const siteConfigData = {
     // Village Identity
@@ -74,7 +74,7 @@ async function seed() {
       phone: "",
       officeHours: "सकाळी 10:00 ते संध्याकाळी 5:00",
       googleMapsEmbedUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3782.217234234234!2d74.9631234!3d17.425678!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bc1234567890abc%3A0xabcdef1234567890!2sGomewadi%2C%20Atpadi%2C%20Sangli%2C%20Maharashtra!5e0!3m2!1sen!2sin!4v1699999999999!5m2!1sen!2sin",
-      mapCaption: "Gomewadi, तालुका आतपाडी, जिल्हा सांगली",
+      mapCaption: "Gomewadi, तालुका आटपाडी, जिल्हा सांगली",
     },
 
     // Useful Links (footer)
