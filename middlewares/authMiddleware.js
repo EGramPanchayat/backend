@@ -123,4 +123,32 @@ export const requireUserAuth = wrapAsync(async (req, res, next) => {
   next();
 });
 
+export const requireAdminOrUserAuth = wrapAsync(async (req, res, next) => {
+  const userToken = req.cookies?.userAccessToken || (req.headers.authorization && req.headers.authorization.startsWith("Bearer ") ? req.headers.authorization.split(" ")[1] : null);
+  const adminToken = req.cookies?.accessToken;
+
+  let decoded;
+  if (userToken) {
+    try {
+      decoded = jwt.verify(userToken, process.env.JWT_SECRET);
+      req.user = { familyId: decoded.familyId, role: "villager" };
+      return next();
+    } catch (e) {
+      // fallback
+    }
+  }
+
+  if (adminToken) {
+    try {
+      decoded = jwt.verify(adminToken, process.env.JWT_SECRET);
+      req.user = { id: decoded.id, email: decoded.email, role: "admin" };
+      return next();
+    } catch (e) {
+      // fallback
+    }
+  }
+
+  throw new ExpressError("Authentication required — please log in", 401);
+});
+
 

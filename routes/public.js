@@ -12,9 +12,9 @@ import { getGovOfficials } from "../controllers/govOfficials.controller.js";
 // VMS controllers
 import { requestOtp, verifyOtp, checkUserAuth, logoutUser } from "../controllers/userAuth.controller.js";
 import { lookupFamily } from "../controllers/family.controller.js";
-import { createRazorpayOrder, verifyRazorpayPayment } from "../controllers/tax.controller.js";
+import { createRazorpayOrder, verifyRazorpayPayment, getFamilyTaxes } from "../controllers/tax.controller.js";
 import { submitApplication, getUserApplications } from "../controllers/application.controller.js";
-import { requireUserAuth } from "../middlewares/authMiddleware.js";
+import { requireUserAuth, requireAdminOrUserAuth } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
@@ -46,6 +46,9 @@ router.post("/auth/otp/logout", logoutUser);
 // Villager Protected Endpoints (need requireUserAuth)
 router.post("/user/applications", requireUserAuth, submitApplication);
 router.get("/user/applications", requireUserAuth, getUserApplications);
+
+// Shared Admin/Villager Dues Endpoint
+router.get("/taxes/:familyId", requireAdminOrUserAuth, getFamilyTaxes);
 
 export default router;
 
