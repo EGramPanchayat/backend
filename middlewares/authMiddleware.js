@@ -4,8 +4,10 @@ import UserSchema from "../DB/models/userModel.js";
 import wrapAsync from "../utils/wrapAsync.js";
 
 
-export function getCookieClearOptions() {
-  const isProduction = process.env.NODE_ENV === "production";
+export function getCookieClearOptions(req) {
+  const origin = req?.get("origin") || "";
+  const isLocalhost = origin.includes("localhost") || origin.includes("127.0.0.1");
+  const isProduction = process.env.NODE_ENV === "production" && !isLocalhost;
   return {
     httpOnly: true,
     sameSite: isProduction ? "none" : "lax",
@@ -26,7 +28,7 @@ export const requireAuth = wrapAsync(async (req, res, next) => {
   try {
     decoded = jwt.verify(token, process.env.JWT_SECRET);
   } catch (jwtErr) {
-    res.clearCookie("accessToken", getCookieClearOptions());
+    res.clearCookie("accessToken", getCookieClearOptions(req));
     if (jwtErr.name === "TokenExpiredError") {
       throw new ExpressError("Access token expired", 401);
     }
@@ -42,7 +44,7 @@ export const requireAuth = wrapAsync(async (req, res, next) => {
   const user = await User.findById(decoded.id).select("-password");
 
   if (!user) {
-    res.clearCookie("accessToken", getCookieClearOptions());
+    res.clearCookie("accessToken", getCookieClearOptions(req));
     throw new ExpressError("User no longer exists", 401);
   }
 
@@ -64,8 +66,10 @@ export const requireRole = (...roles) => {
 };
 
 // Shared cookie options
-export function getCookieOptions() {
-  const isProduction = process.env.NODE_ENV === "production";
+export function getCookieOptions(req) {
+  const origin = req?.get("origin") || "";
+  const isLocalhost = origin.includes("localhost") || origin.includes("127.0.0.1");
+  const isProduction = process.env.NODE_ENV === "production" && !isLocalhost;
   return {
     httpOnly: true,
     sameSite: isProduction ? "none" : "lax",
@@ -85,7 +89,7 @@ export const requireUserAuth = wrapAsync(async (req, res, next) => {
   try {
     decoded = jwt.verify(token, process.env.JWT_SECRET);
   } catch (jwtErr) {
-    res.clearCookie("userAccessToken", getCookieClearOptions());
+    res.clearCookie("userAccessToken", getCookieClearOptions(req));
     if (jwtErr.name === "TokenExpiredError") {
       throw new ExpressError("Access token expired", 401);
     }
@@ -102,7 +106,7 @@ export const requireUserAuth = wrapAsync(async (req, res, next) => {
   const family = await Family.findOne({ familyId: decoded.familyId });
 
   if (!family) {
-    res.clearCookie("userAccessToken", getCookieClearOptions());
+    res.clearCookie("userAccessToken", getCookieClearOptions(req));
     throw new ExpressError("Household no longer exists", 401);
   }
 

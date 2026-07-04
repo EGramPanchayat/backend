@@ -76,7 +76,7 @@ export const verifyOtp = wrapAsync(async (req, res) => {
   );
 
   // Set Cookie
-  const opts = getCookieOptions();
+  const opts = getCookieOptions(req);
   res.cookie("userAccessToken", token, {
     ...opts,
     maxAge: 1000 * 60 * 60 * 24, // 24 hours
@@ -105,7 +105,7 @@ export const checkUserAuth = wrapAsync(async (req, res) => {
       const Family = conn.model("Family", FamilySchema);
       const family = await Family.findOne({ familyId: decoded.familyId }).select("_id familyId mainMemberName houseNumber");
       if (!family) {
-        res.clearCookie("userAccessToken", getCookieClearOptions());
+        res.clearCookie("userAccessToken", getCookieClearOptions(req));
         return res.json({ ok: false });
       }
       return res.json({
@@ -125,6 +125,6 @@ export const checkUserAuth = wrapAsync(async (req, res) => {
 
 // Logout
 export const logoutUser = wrapAsync(async (req, res) => {
-  res.clearCookie("userAccessToken", getCookieClearOptions());
+  res.clearCookie("userAccessToken", getCookieClearOptions(req));
   res.json({ success: true, message: "Logged out successfully" });
 });
