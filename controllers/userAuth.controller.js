@@ -105,18 +105,14 @@ export const checkUserAuth = wrapAsync(async (req, res) => {
     const conn = req.dbConnection;
     if (conn) {
       const Family = conn.model("Family", FamilySchema);
-      const family = await Family.findOne({ familyId: decoded.familyId }).select("_id familyId mainMemberName houseNumber");
+      const family = await Family.findOne({ familyId: decoded.familyId });
       if (!family) {
         res.clearCookie("userAccessToken", getCookieClearOptions(req));
         return res.json({ ok: false });
       }
       return res.json({
         ok: true,
-        family: {
-          familyId: family.familyId,
-          mainMemberName: family.mainMemberName,
-          houseNumber: family.houseNumber,
-        },
+        family,
       });
     }
     return res.json({ ok: false });

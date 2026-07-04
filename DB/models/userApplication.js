@@ -11,7 +11,6 @@ const userApplicationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ["birth", "death", "income", "marriage", "residence"],
     required: true,
   },
   details: {

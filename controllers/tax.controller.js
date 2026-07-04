@@ -127,11 +127,50 @@ export const createRazorpayOrder = wrapAsync(async (req, res) => {
     throw new ExpressError("Bill ID and pay amount are required", 400);
   }
 
+  const parsedAmount = Number(amount);
+  if (parsedAmount <= 0) {
+    throw new ExpressError("Invalid payment amount", 400);
+  }
+
+  // Handle Certificate Application Fee Orders dynamically
+  if (billId === "CERTIFICATE_FEE") {
+    if (isDummyKey) {
+      const mockOrderId = `order_${crypto.randomBytes(8).toString("hex")}`;
+      return res.json({
+        success: true,
+        orderId: mockOrderId,
+        amount: parsedAmount,
+        currency: "INR",
+        keyId: rzpKeyId,
+        mock: true,
+      });
+    }
+
+    const options = {
+      amount: Math.round(parsedAmount * 100),
+      currency: "INR",
+      receipt: `rcpt_cert_${Date.now().toString().substring(5)}`,
+    };
+
+    try {
+      const order = await razorpay.orders.create(options);
+      return res.json({
+        success: true,
+        orderId: order.id,
+        amount: parsedAmount,
+        currency: "INR",
+        keyId: rzpKeyId,
+        mock: false,
+      });
+    } catch (err) {
+      throw new ExpressError(`Razorpay Order creation failed: ${err.message}`, 500);
+    }
+  }
+
   const bill = await TaxBill.findById(billId);
   if (!bill) throw new ExpressError("Tax bill not found", 404);
 
-  const parsedAmount = Number(amount);
-  if (parsedAmount <= 0 || parsedAmount > (bill.amount - bill.paidAmount)) {
+  if (parsedAmount > (bill.amount - bill.paidAmount)) {
     throw new ExpressError("Invalid payment amount", 400);
   }
 
@@ -189,10 +228,28 @@ export const verifyRazorpayPayment = wrapAsync(async (req, res) => {
     throw new ExpressError("Required transaction details missing", 400);
   }
 
+  const parsedAmount = Number(amount);
+
+  // Handle Certificate Application Fee Payments dynamically
+  if (billId === "CERTIFICATE_FEE") {
+    if (mock || isDummyKey) {
+      console.log(`✅ Sandbox checkout success for Certificate Fee: Order ${razorpayOrderId}`);
+    } else {
+      const text = razorpayOrderId + "|" + razorpayPaymentId;
+      const expectedSignature = crypto
+        .createHmac("sha256", rzpKeySecret)
+        .update(text)
+        .digest("hex");
+
+      if (expectedSignature !== razorpaySignature) {
+        throw new ExpressError("Payment verification failed: invalid signature", 400);
+      }
+    }
+    return res.json({ success: true, message: "Certificate fee verified", transactionId: razorpayPaymentId });
+  }
+
   const bill = await TaxBill.findById(billId);
   if (!bill) throw new ExpressError("Tax bill not found", 404);
-
-  const parsedAmount = Number(amount);
 
   // Validate transaction authenticity
   if (mock || isDummyKey) {
