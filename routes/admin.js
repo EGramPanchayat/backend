@@ -6,7 +6,7 @@ import { changeExecutiveBoard } from "../controllers/executiveBoard.controller.j
 import { createDevWorks, deleteDevWork } from "../controllers/developementWorks.controller.js";
 import { createNews, deleteNews } from "../controllers/news.controller.js";
 import { createNotice, deleteNotice } from "../controllers/notices.controller.js";
-import { uploadQR } from "../controllers/qr.controller.js";
+
 import { listDakhala, deleteDakhala } from "../controllers/dakhalaMagani.controller.js";
 import { upsertGovOfficials } from "../controllers/govOfficials.controller.js";
 import { updateSiteConfig } from "../controllers/siteConfig.controller.js";
@@ -46,16 +46,7 @@ router.delete("/news/:id", deleteNews);
 router.post("/notices", pdfUpload.single("pdfFile"), createNotice);
 router.delete("/notices/:id", deleteNotice);
 
-// QR codes (admin upload)
-router.post(
-  "/upload-qr",
-  imageUpload.fields([
-    { name: "panipattiQR", maxCount: 1 },
-    { name: "gharPattiQR", maxCount: 1 },
-    { name: "paymentQR", maxCount: 1 },
-  ]),
-  uploadQR
-);
+
 
 
 // Submissions (admin)
