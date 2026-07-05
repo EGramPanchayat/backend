@@ -96,8 +96,45 @@ export const getFamilyTaxes = wrapAsync(async (req, res) => {
   const TaxBill = conn.model("TaxBill", TaxBillSchema);
   const PaymentHistory = conn.model("PaymentHistory", PaymentHistorySchema);
 
-  const bills = await TaxBill.find({ familyId }).sort({ year: -1 });
+  let bills = await TaxBill.find({ familyId }).sort({ year: -1 });
   const payments = await PaymentHistory.find({ familyId }).sort({ paymentDate: -1 });
+
+  // Fallback: Auto-copy previous year's tax bills if current financial year lacks bills
+  const now = new Date();
+  const currentFinancialYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+  const hasCurrentYearBills = bills.some((b) => b.year === currentFinancialYear);
+
+  if (!hasCurrentYearBills && bills.length > 0) {
+    const prevYearBills = bills.filter((b) => b.year === currentFinancialYear - 1);
+    if (prevYearBills.length > 0) {
+      const calculatedDueDate = new Date(`${currentFinancialYear + 1}-03-31T23:59:59.999Z`);
+      const newBills = [];
+
+      for (const oldBill of prevYearBills) {
+        // Prevent race condition duplicates
+        const exists = await TaxBill.findOne({ familyId, taxType: oldBill.taxType, year: currentFinancialYear });
+        if (!exists) {
+          const newBill = new TaxBill({
+            familyId: oldBill.familyId,
+            taxType: oldBill.taxType,
+            year: currentFinancialYear,
+            amount: oldBill.amount,
+            reason: oldBill.reason || "",
+            dueDate: calculatedDueDate,
+            paidAmount: 0,
+            status: "pending",
+          });
+          await newBill.save();
+          newBills.push(newBill);
+        }
+      }
+
+      if (newBills.length > 0) {
+        // Reload list from database
+        bills = await TaxBill.find({ familyId }).sort({ year: -1 });
+      }
+    }
+  }
 
   res.json({ bills, payments });
 });
