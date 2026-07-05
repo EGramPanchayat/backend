@@ -76,6 +76,8 @@ export const qrPartialLookup = wrapAsync(async (req, res) => {
       logo: siteConfig?.logo || "/images/satyamev.jpg",
     },
     family: {
+      familyId: family.familyId,
+      houseNumber: family.houseNumber,
       mainMemberName: family.mainMemberName,
       familySize: (family.menCount || 0) + (family.womenCount || 0) + (family.seniorCount || 0) + (family.childrenCount || 0),
     },
