@@ -56,7 +56,14 @@ export const updateApplicationStatus = wrapAsync(async (req, res) => {
   const app = await UserApplication.findById(id);
   if (!app) throw new ExpressError("Application request not found", 404);
 
-  if (status !== undefined) app.status = status;
+  if (status !== undefined) {
+    app.status = status;
+    if (status === "completed") {
+      app.completedAt = new Date();
+    } else {
+      app.completedAt = undefined;
+    }
+  }
   if (remark !== undefined) app.remark = remark;
   if (documentUrl !== undefined) app.documentUrl = documentUrl;
 

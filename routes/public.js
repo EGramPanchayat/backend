@@ -14,6 +14,7 @@ import { requestOtp, verifyOtp, checkUserAuth, logoutUser } from "../controllers
 import { lookupFamily } from "../controllers/family.controller.js";
 import { createRazorpayOrder, verifyRazorpayPayment, getFamilyTaxes } from "../controllers/tax.controller.js";
 import { submitApplication, getUserApplications } from "../controllers/application.controller.js";
+import { getUserNotifications, markNotificationRead, markAllNotificationsRead } from "../controllers/notification.controller.js";
 import { requireUserAuth, requireAdminOrUserAuth } from "../middlewares/authMiddleware.js";
 
 const router = Router();
@@ -45,6 +46,11 @@ router.post("/auth/otp/logout", logoutUser);
 // Villager Protected Endpoints (need requireUserAuth)
 router.post("/user/applications", requireUserAuth, submitApplication);
 router.get("/user/applications", requireUserAuth, getUserApplications);
+
+// Villager Notifications
+router.get("/user/notifications", requireUserAuth, getUserNotifications);
+router.patch("/user/notifications/:id/read", requireUserAuth, markNotificationRead);
+router.patch("/user/notifications/read-all", requireUserAuth, markAllNotificationsRead);
 
 // Shared Admin/Villager Dues Endpoint
 router.get("/taxes/:familyId", requireAdminOrUserAuth, getFamilyTaxes);

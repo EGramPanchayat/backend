@@ -8,7 +8,8 @@ const paymentHistorySchema = new mongoose.Schema({
   billId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "TaxBill",
-    required: true,
+    // Aggregated category payments can be distributed over several bills.
+    required: false,
   },
   taxType: {
     type: String,
@@ -35,6 +36,29 @@ const paymentHistorySchema = new mongoose.Schema({
     type: String,
     enum: ["success", "failed"],
     default: "success",
+  },
+  allocations: [{
+    billId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "TaxBill",
+      required: true,
+    },
+    year: {
+      type: Number,
+      required: true,
+    },
+    taxType: {
+      type: String,
+      required: true,
+    },
+    amount: {
+      type: Number,
+      required: true,
+    },
+  }],
+  notes: {
+    type: String,
+    default: "",
   },
 }, { timestamps: true });
 
