@@ -80,8 +80,7 @@ export const qrPartialLookup = wrapAsync(async (req, res) => {
       houseNumber: family.houseNumber,
       mainMemberName: family.mainMemberName,
       familySize: (family.menCount || 0) + (family.womenCount || 0) + (family.seniorCount || 0) + (family.childrenCount || 0),
-    },
-    bills, // Only tax bills, no personal contact info
+    }
   });
 });
 
