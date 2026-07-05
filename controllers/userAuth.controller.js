@@ -126,3 +126,48 @@ export const logoutUser = wrapAsync(async (req, res) => {
   res.clearCookie("userAccessToken", getCookieClearOptions(req));
   res.json({ success: true, message: "Logged out successfully" });
 });
+
+// Request OTP by QR (familyId + token lookup)
+export const requestOtpByQr = wrapAsync(async (req, res) => {
+  const { familyId, token } = req.body;
+  if (!familyId || !token) {
+    throw new ExpressError("Family ID and token are required", 400);
+  }
+
+  const conn = req.dbConnection;
+  const Family = conn.model("Family", FamilySchema);
+  const OtpCode = conn.model("OtpCode", OtpCodeSchema);
+
+  // Validate token and family
+  const family = await Family.findOne({ familyId, qrToken: token });
+  if (!family) {
+    throw new ExpressError("Unauthorized: invalid link or token", 403);
+  }
+
+  const mobileNumber = family.mobileNumber;
+  if (!mobileNumber) {
+    throw new ExpressError("Registered mobile number not found for this household", 404);
+  }
+
+  // Generate 6-digit OTP
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 min expiry
+
+  // Upsert OTP
+  await OtpCode.findOneAndDelete({ mobileNumber });
+  const newOtp = new OtpCode({ mobileNumber, code, expiresAt });
+  await newOtp.save();
+
+  console.log(`\n🔑 [OTP SERVICE] QR OTP for family ${familyId} (${mobileNumber}) is: ${code}\n`);
+
+  // Return partially masked mobile for feedback
+  const maskedMobile = `+91 ******${mobileNumber.slice(-4)}`;
+
+  res.json({
+    success: true,
+    message: `OTP sent successfully`,
+    mobileNumber,
+    maskedMobile,
+    otp: process.env.NODE_ENV !== "production" ? code : undefined,
+  });
+});
