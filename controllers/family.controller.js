@@ -88,9 +88,20 @@ export const qrPartialLookup = wrapAsync(async (req, res) => {
 export const getFamilies = wrapAsync(async (req, res) => {
   const conn = req.dbConnection;
   const Family = conn.model("Family", FamilySchema);
+  const TaxBill = conn.model("TaxBill", TaxBillSchema);
 
   const list = await Family.find().sort({ createdAt: -1 });
-  res.json(list);
+  
+  const familiesWithTaxInfo = await Promise.all(
+    list.map(async (f) => {
+      const billCount = await TaxBill.countDocuments({ familyId: f.familyId });
+      const fObj = f.toObject();
+      fObj.hasTaxAssigned = billCount > 0;
+      return fObj;
+    })
+  );
+
+  res.json(familiesWithTaxInfo);
 });
 
 // Admin: Create family (auto-generates qrToken)
