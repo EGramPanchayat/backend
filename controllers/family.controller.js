@@ -3,6 +3,7 @@ import ExpressError from "../utils/ExpressError.js";
 import wrapAsync from "../utils/wrapAsync.js";
 import FamilySchema from "../DB/models/family.js";
 import TaxBillSchema from "../DB/models/taxBill.js";
+import SiteConfigSchema from "../DB/models/siteConfig.js";
 
 // Public lookup by Family ID and Token (for QR scanning)
 export const lookupFamily = wrapAsync(async (req, res) => {
@@ -38,6 +39,47 @@ export const lookupFamily = wrapAsync(async (req, res) => {
       childrenCount: family.childrenCount,
     },
     bills,
+  });
+});
+
+// QR Code Partial Lookup - Limited non-sensitive data only
+export const qrPartialLookup = wrapAsync(async (req, res) => {
+  const { familyId } = req.params;
+  const { token } = req.query;
+
+  if (!familyId || !token) {
+    throw new ExpressError("Family ID and security token are required", 400);
+  }
+
+  const conn = req.dbConnection;
+  const Family = conn.model("Family", FamilySchema);
+  const TaxBill = conn.model("TaxBill", TaxBillSchema);
+  const SiteConfig = conn.model("SiteConfig", SiteConfigSchema);
+
+  // Validate token
+  const family = await Family.findOne({ familyId, qrToken: token });
+  if (!family) {
+    throw new ExpressError("Unauthorized: invalid link or token", 403);
+  }
+
+  // Fetch tax bills for payment summary
+  const bills = await TaxBill.find({ familyId });
+
+  // Fetch GP site config
+  const siteConfig = await SiteConfig.findOne({});
+
+  // Return ONLY limited, non-sensitive data
+  res.json({
+    success: true,
+    gpDetails: {
+      name: siteConfig?.gpName || "ग्रामपंचायत गोमेवाडी",
+      logo: siteConfig?.logo || "/images/satyamev.jpg",
+    },
+    family: {
+      mainMemberName: family.mainMemberName,
+      familySize: (family.menCount || 0) + (family.womenCount || 0) + (family.seniorCount || 0) + (family.childrenCount || 0),
+    },
+    bills, // Only tax bills, no personal contact info
   });
 });
 

@@ -11,7 +11,7 @@ import { getGovOfficials } from "../controllers/govOfficials.controller.js";
 
 // VMS controllers
 import { requestOtp, verifyOtp, checkUserAuth, logoutUser } from "../controllers/userAuth.controller.js";
-import { lookupFamily } from "../controllers/family.controller.js";
+import { lookupFamily, qrPartialLookup } from "../controllers/family.controller.js";
 import { createRazorpayOrder, verifyRazorpayPayment, getFamilyTaxes } from "../controllers/tax.controller.js";
 import { submitApplication, getUserApplications, updateUserApplication } from "../controllers/application.controller.js";
 import { getUserNotifications, markNotificationRead, markAllNotificationsRead } from "../controllers/notification.controller.js";
@@ -34,6 +34,7 @@ router.post("/certificate-request", imageUpload.single("file"), createDakhala);
 
 // Public VMS Lookup & Payments
 router.get("/family/lookup/:familyId", lookupFamily);
+router.get("/family/qr-lookup/:familyId", qrPartialLookup);
 router.post("/payments/order", createRazorpayOrder);
 router.post("/payments/verify", verifyRazorpayPayment);
 
