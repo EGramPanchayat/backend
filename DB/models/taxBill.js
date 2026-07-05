@@ -29,6 +29,10 @@ const taxBillSchema = new mongoose.Schema({
   dueDate: {
     type: Date,
   },
+  reason: {
+    type: String,
+    default: "",
+  },
 }, { timestamps: true });
 
 export default taxBillSchema;

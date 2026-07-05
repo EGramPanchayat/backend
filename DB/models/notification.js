@@ -16,6 +16,8 @@ const notificationSchema = new mongoose.Schema({
       "fine_assigned",
       "bulk_release",
       "auto_release",
+      "application_submitted",
+      "application_updated",
     ],
   },
   title: {

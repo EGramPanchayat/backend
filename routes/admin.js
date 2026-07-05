@@ -73,7 +73,7 @@ router.get("/taxes/pending-families/:year", getPendingFamiliesForYear);
 
 // VMS User Certificate Applications
 router.get("/applications", getAdminApplications);
-router.post("/applications/:id/status", updateApplicationStatus);
+router.post("/applications/:id/status", pdfUpload.single("pdfFile"), updateApplicationStatus);
 
 // Notifications
 router.get("/notifications", getAdminNotifications);

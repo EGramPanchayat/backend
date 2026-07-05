@@ -108,7 +108,7 @@ export const assignTax = wrapAsync(async (req, res) => {
   const TaxBill = conn.model("TaxBill", TaxBillSchema);
   const Family = conn.model("Family", FamilySchema);
 
-  const { familyId, taxType, year, amount } = req.body;
+  const { familyId, taxType, year, amount, reason } = req.body;
   if (!familyId || !taxType || !year || !amount) {
     throw new ExpressError("Required parameters (familyId, taxType, year, amount) missing", 400);
   }
@@ -125,6 +125,7 @@ export const assignTax = wrapAsync(async (req, res) => {
   let bill = await TaxBill.findOne({ familyId, taxType, year });
   if (bill) {
     bill.amount = Number(amount);
+    if (reason !== undefined) bill.reason = reason;
     // Recalculate status
     if (bill.paidAmount >= bill.amount) {
       bill.status = "paid";
@@ -140,6 +141,7 @@ export const assignTax = wrapAsync(async (req, res) => {
       taxType,
       year: Number(year),
       amount: Number(amount),
+      reason: reason || "",
       dueDate: calculatedDueDate,
     });
   }
@@ -161,7 +163,7 @@ export const assignTax = wrapAsync(async (req, res) => {
         ? `कर अद्ययावत - ${taxLabel}`
         : `नवीन कर आकारणी - ${taxLabel}`,
     message: notifType === "fine_assigned"
-      ? `वर्ष ${fyLabel} साठी ₹${amount} दंड आकारण्यात आला आहे.`
+      ? `वर्ष ${fyLabel} साठी ₹${amount} दंड आकारण्यात आला आहे.${reason ? ` कारण: ${reason}` : ""}`
       : notifType === "tax_updated"
         ? `वर्ष ${fyLabel} साठी ${taxLabel} ची रक्कम ₹${amount} अद्ययावत केली आहे.`
         : `वर्ष ${fyLabel} साठी ${taxLabel} ₹${amount} आकारण्यात आला आहे.`,
