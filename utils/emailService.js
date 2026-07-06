@@ -28,12 +28,11 @@ export const sendOtpEmail = async (email, otpCode) => {
       <div style="background-color: #f8fafc; padding: 40px 10px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
         <div style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); border: 1px solid #e2e8f0;">
           <!-- Brand Header -->
-          <div style="background-color: #15803d; padding: 32px 24px; text-align: center;">
-            <img src="${process.env.FRONTEND_URL || 'https://www.gpgomevadi.in'}/images/satyamev.jpg" alt="Logo" style="width: 64px; height: 64px; border-radius: 50%; border: 3px solid #ffffff; object-fit: cover; margin-bottom: 12px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);" />
+          <div style="background-color: #ea580c; padding: 32px 24px; text-align: center;">
             <h2 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">
               Grampanchayat Gomevadi
             </h2>
-            <p style="color: #bbf7d0; margin: 4px 0 0; font-size: 13px; font-weight: 600;">
+            <p style="color: #ffedd5; margin: 4px 0 0; font-size: 13px; font-weight: 600;">
               Citizen Portal Authentication
             </p>
           </div>
@@ -145,12 +144,11 @@ export const sendTaxAssignmentEmail = async (email, familyName, year, billsList)
       <div style="background-color: #f8fafc; padding: 40px 10px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
         <div style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); border: 1px solid #e2e8f0;">
           <!-- Brand Header -->
-          <div style="background-color: #15803d; padding: 32px 24px; text-align: center;">
-            <img src="${process.env.FRONTEND_URL || 'https://www.gpgomevadi.in'}/images/satyamev.jpg" alt="Logo" style="width: 64px; height: 64px; border-radius: 50%; border: 3px solid #ffffff; object-fit: cover; margin-bottom: 12px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);" />
+          <div style="background-color: #ea580c; padding: 32px 24px; text-align: center;">
             <h2 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.5px;">
               Grampanchayat Gomevadi
             </h2>
-            <p style="color: #bbf7d0; margin: 4px 0 0; font-size: 13px; font-weight: 600;">
+            <p style="color: #ffedd5; margin: 4px 0 0; font-size: 13px; font-weight: 600;">
               Tax Assessment Details (FY ${fyLabel})
             </p>
           </div>
