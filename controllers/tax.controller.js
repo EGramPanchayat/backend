@@ -7,6 +7,7 @@ import PaymentHistorySchema from "../DB/models/paymentHistory.js";
 import FamilySchema from "../DB/models/family.js";
 import TaxScheduleSchema from "../DB/models/taxSchedule.js";
 import { createNotification, createBulkNotifications, taxTypeLabelsMarathi } from "./notification.controller.js";
+import { sendTaxAssignmentEmail } from "../utils/emailService.js";
 
 // Initialize Razorpay SDK
 const rzpKeyId = process.env.RAZORPAY_KEY_ID || "rzp_test_dummyKeyId123";
@@ -208,6 +209,92 @@ export const assignTax = wrapAsync(async (req, res) => {
   });
 
   res.json({ success: true, bill });
+});
+
+// POST /api/admin/taxes/assign-multi
+export const assignTaxesMulti = wrapAsync(async (req, res) => {
+  const conn = req.dbConnection;
+  const TaxBill = conn.model("TaxBill", TaxBillSchema);
+  const Family = conn.model("Family", FamilySchema);
+
+  const { familyId, year, taxes } = req.body;
+  if (!familyId || !year || !taxes) {
+    throw new ExpressError("Required parameters (familyId, year, taxes) missing", 400);
+  }
+
+  // Verify family exists
+  const family = await Family.findOne({ familyId });
+  if (!family) {
+    throw new ExpressError("Household not found", 404);
+  }
+
+  const targetYear = Number(year);
+  const calculatedDueDate = new Date(`${targetYear + 1}-03-31T23:59:59.999Z`);
+  const fyLabel = `${targetYear}-${targetYear + 1}`;
+
+  const savedBills = [];
+
+  for (const taxType of Object.keys(taxes)) {
+    const amount = Number(taxes[taxType]) || 0;
+
+    // Create or Update bill
+    let bill = await TaxBill.findOne({ familyId, taxType, year: targetYear });
+    let isUpdate = false;
+
+    if (bill) {
+      isUpdate = true;
+      bill.amount = amount;
+      // Recalculate status
+      if (bill.paidAmount >= bill.amount) {
+        bill.status = "paid";
+      } else if (bill.paidAmount > 0) {
+        bill.status = "partial";
+      } else {
+        bill.status = "pending";
+      }
+      bill.dueDate = calculatedDueDate;
+    } else {
+      bill = new TaxBill({
+        familyId,
+        taxType,
+        year: targetYear,
+        amount: amount,
+        dueDate: calculatedDueDate,
+        paidAmount: 0,
+        status: "pending",
+      });
+    }
+
+    await bill.save();
+    savedBills.push(bill);
+
+    // Create standard notification for each taxType
+    const taxLabel = taxTypeLabelsMarathi[taxType] || taxType;
+    const notifType = isUpdate ? "tax_updated" : "tax_assigned";
+
+    await createNotification(conn, {
+      familyId,
+      type: notifType,
+      title: notifType === "tax_updated"
+        ? `कर अद्ययावत - ${taxLabel}`
+        : `नवीन कर आकारणी - ${taxLabel}`,
+      message: notifType === "tax_updated"
+        ? `वर्ष ${fyLabel} साठी ${taxLabel} ची रक्कम ₹${amount} अद्ययावत केली आहे.`
+        : `वर्ष ${fyLabel} साठी ${taxLabel} ₹${amount} आकारण्यात आला आहे.`,
+      metadata: { taxType, year: targetYear, amount, billId: bill._id },
+    });
+  }
+
+  // Send combined email notification if family has registered email
+  if (family.email && savedBills.length > 0) {
+    try {
+      await sendTaxAssignmentEmail(family.email.trim().toLowerCase(), family.mainMemberName, targetYear, savedBills);
+    } catch (err) {
+      console.error("[Email Error] Failed to send manual assign taxes email: ", err.message);
+    }
+  }
+
+  res.json({ success: true, bills: savedBills });
 });
 
 // POST /api/admin/payments/offline
@@ -732,6 +819,7 @@ export const bulkReleaseTaxes = wrapAsync(async (req, res) => {
 
   let createdCount = 0;
   let updatedCount = 0;
+  const familyBillsMap = {};
 
   for (const entry of latestTaxes) {
     const { familyId, taxType } = entry._id;
@@ -772,6 +860,11 @@ export const bulkReleaseTaxes = wrapAsync(async (req, res) => {
       await bill.save();
       createdCount++;
     }
+
+    if (!familyBillsMap[familyId]) {
+      familyBillsMap[familyId] = [];
+    }
+    familyBillsMap[familyId].push(bill);
   }
 
   // Create bulk notifications for all families affected
@@ -787,6 +880,20 @@ export const bulkReleaseTaxes = wrapAsync(async (req, res) => {
   }));
   if (bulkNotifs.length > 0) {
     await createBulkNotifications(conn, bulkNotifs);
+  }
+
+  // Send email notifications to registered emails
+  const Family = conn.model("Family", FamilySchema);
+  const affectedFamilies = await Family.find({ familyId: { $in: allFamilyIds } });
+  for (const fam of affectedFamilies) {
+    if (fam.email) {
+      const familyBills = familyBillsMap[fam.familyId] || [];
+      if (familyBills.length > 0) {
+        sendTaxAssignmentEmail(fam.email.trim().toLowerCase(), fam.mainMemberName, targetYear, familyBills).catch(err => {
+          console.error(`[Email Error] Failed to send bulk release tax email: `, err.message);
+        });
+      }
+    }
   }
 
   res.json({
@@ -885,6 +992,7 @@ export const checkAndAutoReleaseTaxes = async (conn) => {
 
       let createdCount = 0;
       let updatedCount = 0;
+      const familyBillsMap = {};
 
       for (const entry of latestTaxes) {
         const { familyId, taxType } = entry._id;
@@ -923,6 +1031,11 @@ export const checkAndAutoReleaseTaxes = async (conn) => {
           await bill.save();
           createdCount++;
         }
+
+        if (!familyBillsMap[familyId]) {
+          familyBillsMap[familyId] = [];
+        }
+        familyBillsMap[familyId].push(bill);
       }
 
       console.log(`[Auto-Release] Taxes released for ${nextYearToRelease}. Created: ${createdCount}, Updated: ${updatedCount}`);
@@ -940,6 +1053,20 @@ export const checkAndAutoReleaseTaxes = async (conn) => {
       }));
       if (autoNotifs.length > 0) {
         await createBulkNotifications(conn, autoNotifs);
+      }
+
+      // Send email notifications to registered emails
+      const Family = conn.model("Family", FamilySchema);
+      const affectedFamilies = await Family.find({ familyId: { $in: autoFamilyIds } });
+      for (const fam of affectedFamilies) {
+        if (fam.email) {
+          const familyBills = familyBillsMap[fam.familyId] || [];
+          if (familyBills.length > 0) {
+            sendTaxAssignmentEmail(fam.email.trim().toLowerCase(), fam.mainMemberName, nextYearToRelease, familyBills).catch(err => {
+              console.error(`[Email Error] Failed to send auto-release tax email: `, err.message);
+            });
+          }
+        }
       }
 
       // Update schedule state

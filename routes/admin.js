@@ -13,7 +13,7 @@ import { updateSiteConfig } from "../controllers/siteConfig.controller.js";
 
 // VMS controllers
 import { getFamilies, createFamily, updateFamily, deleteFamily } from "../controllers/family.controller.js";
-import { assignTax, recordOfflinePayment, recordCategoryOfflinePayment, getPaymentsLogs, getGlobalTaxStats, bulkReleaseTaxes, getTaxSchedule, toggleTaxSchedule, getPendingFamiliesForYear } from "../controllers/tax.controller.js";
+import { assignTax, assignTaxesMulti, recordOfflinePayment, recordCategoryOfflinePayment, getPaymentsLogs, getGlobalTaxStats, bulkReleaseTaxes, getTaxSchedule, toggleTaxSchedule, getPendingFamiliesForYear } from "../controllers/tax.controller.js";
 import { getAdminApplications, updateApplicationStatus } from "../controllers/application.controller.js";
 import { getAdminNotifications } from "../controllers/notification.controller.js";
 
@@ -62,6 +62,7 @@ router.delete("/families/:id", deleteFamily);
 
 // VMS Taxes & Payments
 router.post("/taxes/assign", assignTax);
+router.post("/taxes/assign-multi", assignTaxesMulti);
 router.post("/payments/offline", recordOfflinePayment);
 router.post("/payments/offline-category", recordCategoryOfflinePayment);
 router.get("/payments/logs", getPaymentsLogs);
