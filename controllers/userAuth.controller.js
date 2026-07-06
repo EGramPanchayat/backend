@@ -6,6 +6,46 @@ import OtpCodeSchema from "../DB/models/otpCode.js";
 import { sendOtpEmail } from "../utils/emailService.js";
 import { getCookieOptions, getCookieClearOptions } from "../middlewares/authMiddleware.js";
 
+// Sign access token (7 days)
+function signUserAccessToken(family) {
+  return jwt.sign(
+    { familyId: family.familyId, id: family._id, role: "villager" },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+}
+
+// Sign refresh token (60 days / 2 months)
+function signUserRefreshToken(family) {
+  return jwt.sign(
+    { id: family._id, familyId: family.familyId },
+    process.env.JWT_SECRET,
+    { expiresIn: "60d" }
+  );
+}
+
+// Set access and refresh cookies
+async function setUserAuthCookies(res, family, conn) {
+  const accessToken = signUserAccessToken(family);
+  const refreshToken = signUserRefreshToken(family);
+  const opts = getCookieOptions(res.req);
+
+  const Family = conn.model("Family", FamilySchema);
+  await Family.findByIdAndUpdate(family._id, { refreshToken });
+
+  res.cookie("userAccessToken", accessToken, {
+    ...opts,
+    maxAge: 1000 * 60 * 60 * 24 * 7,
+  });
+
+  res.cookie("userRefreshToken", refreshToken, {
+    ...opts,
+    maxAge: 1000 * 60 * 60 * 24 * 60,
+  });
+
+  return { accessToken, refreshToken };
+}
+
 // Request OTP
 export const requestOtp = wrapAsync(async (req, res) => {
   const { email } = req.body;
@@ -80,24 +120,13 @@ export const verifyOtp = wrapAsync(async (req, res) => {
   // Delete OTP code
   await OtpCode.deleteOne({ _id: otpRecord._id });
 
-  // Generate JWT Token
-  const token = jwt.sign(
-    { familyId: family.familyId, id: family._id, role: "villager" },
-    process.env.JWT_SECRET,
-    { expiresIn: "24h" }
-  );
-
-  // Set Cookie
-  const opts = getCookieOptions(req);
-  res.cookie("userAccessToken", token, {
-    ...opts,
-    maxAge: 1000 * 60 * 60 * 24, // 24 hours
-  });
+  // Generate and set access/refresh tokens
+  const { accessToken } = await setUserAuthCookies(res, family, conn);
 
   res.json({
     success: true,
     message: "Login successful",
-    token,
+    token: accessToken,
     family: {
       familyId: family.familyId,
       mainMemberName: family.mainMemberName,
@@ -136,6 +165,7 @@ export const checkUserAuth = wrapAsync(async (req, res) => {
 // Logout
 export const logoutUser = wrapAsync(async (req, res) => {
   res.clearCookie("userAccessToken", getCookieClearOptions(req));
+  res.clearCookie("userRefreshToken", getCookieClearOptions(req));
   res.json({ success: true, message: "Logged out successfully" });
 });
 
@@ -195,4 +225,46 @@ export const requestOtpByQr = wrapAsync(async (req, res) => {
     maskedEmail,
     otp: process.env.NODE_ENV !== "production" ? code : undefined,
   });
+});
+
+// Refresh User Token
+export const refreshUserToken = wrapAsync(async (req, res) => {
+  const token = req.cookies?.userRefreshToken;
+  if (!token) {
+    throw new ExpressError("No refresh token — please log in", 401);
+  }
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    res.clearCookie("userAccessToken", getCookieClearOptions(req));
+    res.clearCookie("userRefreshToken", getCookieClearOptions(req));
+    throw new ExpressError("Refresh token expired — please log in again", 401);
+  }
+
+  const conn = req.dbConnection;
+  const Family = conn.model("Family", FamilySchema);
+  const family = await Family.findById(decoded.id);
+
+  if (!family) {
+    res.clearCookie("userAccessToken", getCookieClearOptions(req));
+    res.clearCookie("userRefreshToken", getCookieClearOptions(req));
+    throw new ExpressError("Household no longer exists", 401);
+  }
+
+  if (family.refreshToken !== token) {
+    res.clearCookie("userAccessToken", getCookieClearOptions(req));
+    res.clearCookie("userRefreshToken", getCookieClearOptions(req));
+    throw new ExpressError("Refresh token revoked — please log in again", 401);
+  }
+
+  const newAccessToken = signUserAccessToken(family);
+  const opts = getCookieOptions(req);
+  res.cookie("userAccessToken", newAccessToken, {
+    ...opts,
+    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+  });
+
+  res.json({ success: true, token: newAccessToken, message: "Token refreshed" });
 });

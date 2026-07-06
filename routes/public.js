@@ -10,7 +10,7 @@ import { getSiteConfig } from "../controllers/siteConfig.controller.js";
 import { getGovOfficials } from "../controllers/govOfficials.controller.js";
 
 // VMS controllers
-import { requestOtp, verifyOtp, checkUserAuth, logoutUser, requestOtpByQr } from "../controllers/userAuth.controller.js";
+import { requestOtp, verifyOtp, refreshUserToken, checkUserAuth, logoutUser, requestOtpByQr } from "../controllers/userAuth.controller.js";
 import { lookupFamily, qrPartialLookup } from "../controllers/family.controller.js";
 import { createRazorpayOrder, verifyRazorpayPayment, getFamilyTaxes } from "../controllers/tax.controller.js";
 import { submitApplication, getUserApplications, updateUserApplication } from "../controllers/application.controller.js";
@@ -42,6 +42,7 @@ router.post("/payments/verify", verifyRazorpayPayment);
 router.post("/auth/otp/request", requestOtp);
 router.post("/auth/otp/request-by-qr", requestOtpByQr);
 router.post("/auth/otp/verify", verifyOtp);
+router.post("/auth/otp/refresh", refreshUserToken);
 router.get("/auth/otp/check", checkUserAuth);
 router.post("/auth/otp/logout", logoutUser);
 
