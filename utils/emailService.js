@@ -21,28 +21,52 @@ export const sendOtpEmail = async (email, otpCode) => {
   });
 
   const mailOptions = {
-    from: `"ग्रामपंचायत गोमेवाडी" <${user}>`,
+    from: `"Grampanchayat Gomevadi" <${user}>`,
     to: email,
-    subject: "नागरिक पोर्टल लॉगिन - OTP संकेतशब्द",
+    subject: "Gomevadi Citizen Portal Login - OTP Code",
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px;">
-        <h2 style="color: #15803d; text-align: center; border-bottom: 2px solid #15803d; padding-bottom: 10px; margin-bottom: 20px;">
-          ग्रामपंचायत गोमेवाडी नागरिक लॉगिन
-        </h2>
-        <p style="font-size: 16px; color: #334155; line-height: 1.6;">
-          प्रिय नागरिक, <br /><br />
-          आपल्या गोमेवाडी ग्रामपंचायत नागरिक पोर्टलवर लॉगिन करण्यासाठी खालील ६-अंकी वन-टाइम पासवर्ड (OTP) वापर करा:
-        </p>
-        <div style="text-align: center; margin: 30px 0;">
-          <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #1e293b; background-color: #f1f5f9; padding: 10px 25px; border-radius: 10px; border: 1px solid #cbd5e1; display: inline-block;">
-            ${otpCode}
-          </span>
-        </div>
-        <p style="font-size: 14px; color: #64748b; line-height: 1.6;">
-          हा OTP कोड ५ मिनिटांसाठी वैध आहे. हा संकेतशब्द कोणाशीही सामायिक करू नका.
-        </p>
-        <div style="margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 15px; text-align: center; font-size: 12px; color: #94a3b8;">
-          © ग्रामपंचायत गोमेवाडी, ता. आटपाडी, जि. सांगली
+      <div style="background-color: #f8fafc; padding: 40px 10px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+        <div style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); border: 1px solid #e2e8f0;">
+          <!-- Brand Header -->
+          <div style="background-color: #15803d; padding: 32px 24px; text-align: center;">
+            <h2 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">
+              Grampanchayat Gomevadi
+            </h2>
+            <p style="color: #bbf7d0; margin: 4px 0 0; font-size: 13px; font-weight: 600;">
+              Citizen Portal Authentication
+            </p>
+          </div>
+          
+          <!-- Content Body -->
+          <div style="padding: 32px 24px;">
+            <p style="font-size: 15px; color: #334155; line-height: 22px; margin: 0 0 16px;">
+              Hello Citizen,
+            </p>
+            <p style="font-size: 15px; color: #475569; line-height: 22px; margin: 0 0 24px;">
+              Use the following 6-digit One-Time Password (OTP) to securely log in to your citizen profile:
+            </p>
+            
+            <!-- OTP Box -->
+            <div style="text-align: center; margin: 28px 0; background-color: #f1f5f9; padding: 16px; border-radius: 12px; border: 1px dashed #cbd5e1;">
+              <span style="font-family: 'Courier New', Courier, monospace; font-size: 34px; font-weight: 800; letter-spacing: 6px; color: #0f172a;">
+                ${otpCode}
+              </span>
+            </div>
+            
+            <p style="font-size: 13px; color: #64748b; line-height: 20px; margin: 24px 0 0; text-align: center;">
+              This code is valid for <strong>5 minutes</strong>. For security reasons, please do not share this password with anyone.
+            </p>
+          </div>
+          
+          <!-- Footer -->
+          <div style="background-color: #f8fafc; border-top: 1px solid #f1f5f9; padding: 20px; text-align: center;">
+            <p style="margin: 0; font-size: 11px; color: #94a3b8; font-weight: 500;">
+              © Grampanchayat Gomevadi, Tal. Atpadi, Dist. Sangli
+            </p>
+            <p style="margin: 4px 0 0; font-size: 10px; color: #cbd5e1;">
+              If you did not request this code, you can safely ignore this email.
+            </p>
+          </div>
         </div>
       </div>
     `,
