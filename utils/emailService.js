@@ -29,6 +29,7 @@ export const sendOtpEmail = async (email, otpCode) => {
         <div style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); border: 1px solid #e2e8f0;">
           <!-- Brand Header -->
           <div style="background-color: #15803d; padding: 32px 24px; text-align: center;">
+            <img src="${process.env.FRONTEND_URL || 'https://www.gpgomevadi.in'}/images/satyamev.jpg" alt="Logo" style="width: 64px; height: 64px; border-radius: 50%; border: 3px solid #ffffff; object-fit: cover; margin-bottom: 12px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);" />
             <h2 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">
               Grampanchayat Gomevadi
             </h2>
