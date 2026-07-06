@@ -260,10 +260,19 @@ export const refreshUserToken = wrapAsync(async (req, res) => {
   }
 
   const newAccessToken = signUserAccessToken(family);
+  const newRefreshToken = signUserRefreshToken(family);
+
+  // Update in DB
+  await Family.findByIdAndUpdate(family._id, { refreshToken: newRefreshToken });
+
   const opts = getCookieOptions(req);
   res.cookie("userAccessToken", newAccessToken, {
     ...opts,
     maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+  });
+  res.cookie("userRefreshToken", newRefreshToken, {
+    ...opts,
+    maxAge: 1000 * 60 * 60 * 24 * 60, // 60 days
   });
 
   res.json({ success: true, token: newAccessToken, message: "Token refreshed" });

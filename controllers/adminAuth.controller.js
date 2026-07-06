@@ -109,12 +109,21 @@ export const refreshToken = wrapAsync(async (req, res) => {
     throw new ExpressError("Refresh token revoked — please log in again", 401);
   }
 
-  // Issue fresh access token only (refresh token stays valid until it expires)
+  // Issue fresh access and rotated refresh tokens
   const newAccessToken = signAccessToken(user);
+  const newRefreshToken = signRefreshToken(user);
+
+  // Update in DB
+  await User.findByIdAndUpdate(user._id, { refreshToken: newRefreshToken });
+
   const opts = getCookieOptions();
   res.cookie("accessToken", newAccessToken, {
     ...opts,
     maxAge: 1000 * 60 * 15,
+  });
+  res.cookie("refreshToken", newRefreshToken, {
+    ...opts,
+    maxAge: 1000 * 60 * 60 * 24 * 7,
   });
 
   res.json({ success: true, message: "Token refreshed" });
