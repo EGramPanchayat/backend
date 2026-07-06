@@ -40,6 +40,32 @@ export const pdfUpload = multer({
   },
 });
 
+export const bookUpload = multer({
+  storage,
+  limits: { fileSize: 15 * 1024 * 1024 }, // 15MB limit for pdf + cover
+  fileFilter: (_req, file, cb) => {
+    if (file.fieldname === "coverImage") {
+      const allowed = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+      if (allowed.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error("Only image files are allowed for coverImage"), false);
+      }
+    } else if (file.fieldname === "pdfFile") {
+      if (file.mimetype === "application/pdf") {
+        cb(null, true);
+      } else {
+        cb(new Error("Only PDF files are allowed for pdfFile"), false);
+      }
+    } else {
+      cb(null, true);
+    }
+  }
+}).fields([
+  { name: "coverImage", maxCount: 1 },
+  { name: "pdfFile", maxCount: 1 }
+]);
+
 export function cleanTempFiles(files) {
   const list = Array.isArray(files) ? files : [files];
   for (const f of list) {

@@ -15,7 +15,17 @@ import { lookupFamily, qrPartialLookup } from "../controllers/family.controller.
 import { createRazorpayOrder, verifyRazorpayPayment, getFamilyTaxes } from "../controllers/tax.controller.js";
 import { submitApplication, getUserApplications, updateUserApplication } from "../controllers/application.controller.js";
 import { getUserNotifications, markNotificationRead, markAllNotificationsRead } from "../controllers/notification.controller.js";
-import { requireUserAuth, requireAdminOrUserAuth } from "../middlewares/authMiddleware.js";
+import { requireUserAuth, requireAdminOrUserAuth, requireAuth } from "../middlewares/authMiddleware.js";
+import { bookUpload } from "../middlewares/multerConfig.js";
+import {
+  getAllBooks,
+  getBookById,
+  createBook,
+  updateBook,
+  deleteBook,
+  downloadBook,
+  getBookStats
+} from "../controllers/book.controller.js";
 
 const router = Router();
 
@@ -58,6 +68,15 @@ router.patch("/user/notifications/read-all", requireUserAuth, markAllNotificatio
 
 // Shared Admin/Villager Dues Endpoint
 router.get("/taxes/:familyId", requireAdminOrUserAuth, getFamilyTaxes);
+
+// eLibrary Book routes
+router.get("/books/stats", getBookStats);
+router.get("/books", getAllBooks);
+router.get("/books/:id", getBookById);
+router.get("/books/download/:id", downloadBook);
+router.post("/books", requireAuth, bookUpload, createBook);
+router.put("/books/:id", requireAuth, bookUpload, updateBook);
+router.delete("/books/:id", requireAuth, deleteBook);
 
 export default router;
 
