@@ -115,7 +115,7 @@ export const requireUserAuth = wrapAsync(async (req, res, next) => {
   req.user = {
     _id: family._id,
     familyId: family.familyId,
-    mobileNumber: family.mobileNumber,
+    email: family.email,
     mainMemberName: family.mainMemberName,
     role: "villager"
   };

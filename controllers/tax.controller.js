@@ -1015,14 +1015,14 @@ export const getPendingFamiliesForYear = wrapAsync(async (req, res) => {
       const famProfile = familiesMap[familyId] || {
         mainMemberName: "Unknown",
         houseNumber: "N/A",
-        mobileNumber: "N/A"
+        email: "N/A"
       };
 
       result.push({
         familyId,
         headName: famProfile.mainMemberName,
         houseNumber: famProfile.houseNumber,
-        mobileNumber: famProfile.mobileNumber,
+        email: famProfile.email,
         waterPending,
         housePending,
         finePending,

@@ -15,9 +15,11 @@ const familySchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  mobileNumber: {
+  email: {
     type: String,
     required: true,
+    trim: true,
+    lowercase: true,
   },
   whatsappNumber: {
     type: String,

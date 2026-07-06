@@ -3,24 +3,26 @@ import ExpressError from "../utils/ExpressError.js";
 import wrapAsync from "../utils/wrapAsync.js";
 import FamilySchema from "../DB/models/family.js";
 import OtpCodeSchema from "../DB/models/otpCode.js";
-import { sendOtpSms } from "../utils/smsService.js";
+import { sendOtpEmail } from "../utils/emailService.js";
 import { getCookieOptions, getCookieClearOptions } from "../middlewares/authMiddleware.js";
 
 // Request OTP
 export const requestOtp = wrapAsync(async (req, res) => {
-  const { mobileNumber } = req.body;
-  if (!mobileNumber) {
-    throw new ExpressError("Mobile number is required", 400);
+  const { email } = req.body;
+  if (!email) {
+    throw new ExpressError("Email address is required", 400);
   }
+
+  const emailLower = email.trim().toLowerCase();
 
   const conn = req.dbConnection;
   const Family = conn.model("Family", FamilySchema);
   const OtpCode = conn.model("OtpCode", OtpCodeSchema);
 
-  // Check if mobile number belongs to any family
-  const family = await Family.findOne({ mobileNumber });
+  // Check if email belongs to any family
+  const family = await Family.findOne({ email: emailLower });
   if (!family) {
-    throw new ExpressError("Mobile number is not registered under any household", 404);
+    throw new ExpressError("Email address is not registered under any household", 404);
   }
 
   // Generate 6-digit OTP
@@ -28,18 +30,18 @@ export const requestOtp = wrapAsync(async (req, res) => {
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 min expiry
 
   // Upsert OTP
-  await OtpCode.findOneAndDelete({ mobileNumber });
-  const newOtp = new OtpCode({ mobileNumber, code, expiresAt });
+  await OtpCode.findOneAndDelete({ email: emailLower });
+  const newOtp = new OtpCode({ email: emailLower, code, expiresAt });
   await newOtp.save();
 
   // Log to console for user/testing purposes
-  console.log(`\n🔑 [OTP SERVICE] OTP for ${mobileNumber} is: ${code}\n`);
+  console.log(`\n🔑 [OTP SERVICE] OTP for ${emailLower} is: ${code}\n`);
 
-  // Send SMS via Fast2SMS
+  // Send Email via Nodemailer
   try {
-    await sendOtpSms(mobileNumber, code);
+    await sendOtpEmail(emailLower, code);
   } catch (err) {
-    console.error("SMS Sending failed: ", err.message);
+    console.error("Email Sending failed: ", err.message);
   }
 
   res.json({
@@ -52,23 +54,25 @@ export const requestOtp = wrapAsync(async (req, res) => {
 
 // Verify OTP & Login
 export const verifyOtp = wrapAsync(async (req, res) => {
-  const { mobileNumber, code } = req.body;
-  if (!mobileNumber || !code) {
-    throw new ExpressError("Mobile number and OTP code are required", 400);
+  const { email, code } = req.body;
+  if (!email || !code) {
+    throw new ExpressError("Email and OTP code are required", 400);
   }
+
+  const emailLower = email.trim().toLowerCase();
 
   const conn = req.dbConnection;
   const Family = conn.model("Family", FamilySchema);
   const OtpCode = conn.model("OtpCode", OtpCodeSchema);
 
   // Check OTP
-  const otpRecord = await OtpCode.findOne({ mobileNumber });
+  const otpRecord = await OtpCode.findOne({ email: emailLower });
   if (!otpRecord || otpRecord.code !== code || otpRecord.expiresAt < new Date()) {
     throw new ExpressError("Invalid or expired OTP code", 401);
   }
 
   // Find family
-  const family = await Family.findOne({ mobileNumber });
+  const family = await Family.findOne({ email: emailLower });
   if (!family) {
     throw new ExpressError("Household details not found", 404);
   }
@@ -152,37 +156,43 @@ export const requestOtpByQr = wrapAsync(async (req, res) => {
     throw new ExpressError("Unauthorized: invalid link or token", 403);
   }
 
-  const mobileNumber = family.mobileNumber;
-  if (!mobileNumber) {
-    throw new ExpressError("Registered mobile number not found for this household", 404);
+  const email = family.email;
+  if (!email) {
+    throw new ExpressError("Registered email address not found for this household", 404);
   }
+
+  const emailLower = email.trim().toLowerCase();
 
   // Generate 6-digit OTP
   const code = Math.floor(100000 + Math.random() * 900000).toString();
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 min expiry
 
   // Upsert OTP
-  await OtpCode.findOneAndDelete({ mobileNumber });
-  const newOtp = new OtpCode({ mobileNumber, code, expiresAt });
+  await OtpCode.findOneAndDelete({ email: emailLower });
+  const newOtp = new OtpCode({ email: emailLower, code, expiresAt });
   await newOtp.save();
 
-  console.log(`\n🔑 [OTP SERVICE] QR OTP for family ${familyId} (${mobileNumber}) is: ${code}\n`);
+  console.log(`\n🔑 [OTP SERVICE] QR OTP for family ${familyId} (${emailLower}) is: ${code}\n`);
 
-  // Send SMS via Fast2SMS
+  // Send Email via Nodemailer
   try {
-    await sendOtpSms(mobileNumber, code);
+    await sendOtpEmail(emailLower, code);
   } catch (err) {
-    console.error("SMS Sending failed: ", err.message);
+    console.error("Email Sending failed: ", err.message);
   }
 
-  // Return partially masked mobile for feedback
-  const maskedMobile = `+91 ******${mobileNumber.slice(-4)}`;
+  // Return partially masked email for feedback
+  const parts = emailLower.split("@");
+  const namePart = parts[0];
+  const domainPart = parts[1];
+  const maskedName = namePart.length > 2 ? `${namePart.slice(0, 2)}***${namePart.slice(-1)}` : `${namePart}***`;
+  const maskedEmail = `${maskedName}@${domainPart}`;
 
   res.json({
     success: true,
     message: `OTP sent successfully`,
-    mobileNumber,
-    maskedMobile,
+    email: emailLower,
+    maskedEmail,
     otp: process.env.NODE_ENV !== "production" ? code : undefined,
   });
 });

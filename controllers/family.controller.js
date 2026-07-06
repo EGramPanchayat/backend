@@ -113,7 +113,7 @@ export const createFamily = wrapAsync(async (req, res) => {
     familyId,
     houseNumber,
     mainMemberName,
-    mobileNumber,
+    email,
     whatsappNumber,
     address,
     menCount,
@@ -122,7 +122,7 @@ export const createFamily = wrapAsync(async (req, res) => {
     childrenCount,
   } = req.body;
 
-  if (!houseNumber || !mainMemberName || !mobileNumber || !address) {
+  if (!houseNumber || !mainMemberName || !email || !address) {
     throw new ExpressError("Required fields missing", 450);
   }
 
@@ -155,7 +155,7 @@ export const createFamily = wrapAsync(async (req, res) => {
     familyId: finalFamilyId,
     houseNumber,
     mainMemberName,
-    mobileNumber,
+    email,
     whatsappNumber,
     address,
     menCount: Number(menCount || 0),
