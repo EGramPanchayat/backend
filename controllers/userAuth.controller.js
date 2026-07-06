@@ -3,6 +3,7 @@ import ExpressError from "../utils/ExpressError.js";
 import wrapAsync from "../utils/wrapAsync.js";
 import FamilySchema from "../DB/models/family.js";
 import OtpCodeSchema from "../DB/models/otpCode.js";
+import { sendOtpSms } from "../utils/smsService.js";
 import { getCookieOptions, getCookieClearOptions } from "../middlewares/authMiddleware.js";
 
 // Request OTP
@@ -33,6 +34,13 @@ export const requestOtp = wrapAsync(async (req, res) => {
 
   // Log to console for user/testing purposes
   console.log(`\n🔑 [OTP SERVICE] OTP for ${mobileNumber} is: ${code}\n`);
+
+  // Send SMS via Fast2SMS
+  try {
+    await sendOtpSms(mobileNumber, code);
+  } catch (err) {
+    console.error("SMS Sending failed: ", err.message);
+  }
 
   res.json({
     success: true,
@@ -159,6 +167,13 @@ export const requestOtpByQr = wrapAsync(async (req, res) => {
   await newOtp.save();
 
   console.log(`\n🔑 [OTP SERVICE] QR OTP for family ${familyId} (${mobileNumber}) is: ${code}\n`);
+
+  // Send SMS via Fast2SMS
+  try {
+    await sendOtpSms(mobileNumber, code);
+  } catch (err) {
+    console.error("SMS Sending failed: ", err.message);
+  }
 
   // Return partially masked mobile for feedback
   const maskedMobile = `+91 ******${mobileNumber.slice(-4)}`;

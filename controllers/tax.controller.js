@@ -284,12 +284,13 @@ export const createRazorpayOrder = wrapAsync(async (req, res) => {
 
   // Handle Certificate Application Fee Orders dynamically
   if (billId === "CERTIFICATE_FEE") {
+    const finalFeeAmount = 20; // Enforce exactly Rs 20 compulsory fee
     if (isDummyKey) {
       const mockOrderId = `order_${crypto.randomBytes(8).toString("hex")}`;
       return res.json({
         success: true,
         orderId: mockOrderId,
-        amount: parsedAmount,
+        amount: finalFeeAmount,
         currency: "INR",
         keyId: rzpKeyId,
         mock: true,
@@ -297,7 +298,7 @@ export const createRazorpayOrder = wrapAsync(async (req, res) => {
     }
 
     const options = {
-      amount: Math.round(parsedAmount * 100),
+      amount: finalFeeAmount * 100,
       currency: "INR",
       receipt: `rcpt_cert_${Date.now().toString().substring(5)}`,
       notes: {
@@ -311,7 +312,7 @@ export const createRazorpayOrder = wrapAsync(async (req, res) => {
       return res.json({
         success: true,
         orderId: order.id,
-        amount: parsedAmount,
+        amount: finalFeeAmount,
         currency: "INR",
         keyId: rzpKeyId,
         mock: false,
@@ -340,6 +341,10 @@ export const createRazorpayOrder = wrapAsync(async (req, res) => {
 
     if (totalOutstanding <= 0) {
       throw new ExpressError("No outstanding bills found for this category", 400);
+    }
+    const minPayable = Math.min(500, totalOutstanding);
+    if (parsedAmount < minPayable) {
+      throw new ExpressError(`Payment must be at least ₹${minPayable}`, 400);
     }
     if (parsedAmount > totalOutstanding) {
       throw new ExpressError(`Payment cannot exceed the outstanding amount of ₹${totalOutstanding}`, 400);
