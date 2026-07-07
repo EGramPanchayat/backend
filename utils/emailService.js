@@ -11,7 +11,7 @@ async function sendViaResend(to, subject, html) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Grampanchayat Gomevadi <onboarding@resend.dev>",
+      from: "Grampanchayat Gomevadi <noreply@gpgomevadi.in>",
       to: [to],
       subject,
       html,
