@@ -1,36 +1,30 @@
+import dotenv from "dotenv";
+dotenv.config();
 import nodemailer from "nodemailer";
-import dns from "dns";
 
-// Force IPv4 first to avoid ENETUNREACH IPv6 resolution errors on cloud hostings
-dns.setDefaultResultOrder("ipv4first");
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS;
+
+// Create transporter once at module level — exactly like working GTA pattern
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: EMAIL_USER,
+    pass: EMAIL_PASS,
+  },
+});
 
 export const sendOtpEmail = async (email, otpCode) => {
-  const user = process.env.EMAIL_USER;
-  const pass = process.env.EMAIL_PASS;
-
   console.log(`[EMAIL SERVICE] Initializing OTP email to: ${email}`);
 
   // Fallback / mock mode if not configured
-  if (!user || !pass || pass === "mock_pass") {
+  if (!EMAIL_USER || !EMAIL_PASS || EMAIL_PASS === "mock_pass") {
     console.log(`\n✉️ [MOCK EMAIL SERVICE] To: ${email}\n🔑 OTP Code: ${otpCode}\n(Note: Set EMAIL_USER and EMAIL_PASS in your .env for real SMTP delivery)\n`);
     return { mock: true, code: otpCode };
   }
 
-  const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false, // Use STARTTLS (upgrades to TLS after connect)
-    requireTLS: true,
-    auth: {
-      user,
-      pass,
-    },
-    connectionTimeout: 10000, // 10 seconds connection timeout
-    socketTimeout: 10000,     // 10 seconds socket timeout
-  });
-
   const mailOptions = {
-    from: `"Grampanchayat Gomevadi" <${user}>`,
+    from: `"Grampanchayat Gomevadi" <${EMAIL_USER}>`,
     to: email,
     subject: "Gomevadi Citizen Portal Login - OTP Code",
     html: `
@@ -96,29 +90,13 @@ export const sendOtpEmail = async (email, otpCode) => {
 
 // Send Tax Assignment details
 export const sendTaxAssignmentEmail = async (email, familyName, year, billsList) => {
-  const user = process.env.EMAIL_USER;
-  const pass = process.env.EMAIL_PASS;
-
   console.log(`[EMAIL SERVICE] Initializing Tax Assignment Email to: ${email}`);
 
   // Fallback / mock mode if not configured
-  if (!user || !pass || pass === "mock_pass") {
+  if (!EMAIL_USER || !EMAIL_PASS || EMAIL_PASS === "mock_pass") {
     console.log(`\n✉️ [MOCK EMAIL SERVICE] Tax Assignment Email to: ${email} (Family: ${familyName}, Year: ${year})\nBills:\n${JSON.stringify(billsList, null, 2)}\n`);
     return { mock: true };
   }
-
-  const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false, // Use STARTTLS (upgrades to TLS after connect)
-    requireTLS: true,
-    auth: {
-      user,
-      pass,
-    },
-    connectionTimeout: 10000, // 10 seconds connection timeout
-    socketTimeout: 10000,     // 10 seconds socket timeout
-  });
 
   const fyLabel = `${year}-${Number(year) + 1}`;
   const totalAmount = billsList.reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
@@ -151,7 +129,7 @@ export const sendTaxAssignmentEmail = async (email, familyName, year, billsList)
   }).join("");
 
   const mailOptions = {
-    from: `"Grampanchayat Gomevadi" <${user}>`,
+    from: `"Grampanchayat Gomevadi" <${EMAIL_USER}>`,
     to: email,
     subject: `Grampanchayat Gomevadi - Tax Assessment Details (FY ${fyLabel})`,
     html: `
