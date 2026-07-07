@@ -65,8 +65,8 @@ export const requestOtp = wrapAsync(async (req, res) => {
     throw new ExpressError("Email address is not registered under any household", 404);
   }
 
-  // Generate 6-digit OTP
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  // Generate 4-digit OTP
+  const code = Math.floor(1000 + Math.random() * 9000).toString();
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 min expiry
 
   // Upsert OTP
@@ -193,8 +193,8 @@ export const requestOtpByQr = wrapAsync(async (req, res) => {
 
   const emailLower = email.trim().toLowerCase();
 
-  // Generate 6-digit OTP
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  // Generate 4-digit OTP
+  const code = Math.floor(1000 + Math.random() * 9000).toString();
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 min expiry
 
   // Upsert OTP
