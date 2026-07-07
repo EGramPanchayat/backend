@@ -18,14 +18,15 @@ export const sendOtpEmail = async (email, otpCode) => {
 
   const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
-    port: 465,
-    secure: true, // Use SSL/TLS
+    port: 587,
+    secure: false, // Use STARTTLS (upgrades to TLS after connect)
+    requireTLS: true,
     auth: {
       user,
       pass,
     },
-    connectionTimeout: 5000, // 5 seconds connection timeout
-    socketTimeout: 5000,     // 5 seconds socket timeout
+    connectionTimeout: 10000, // 10 seconds connection timeout
+    socketTimeout: 10000,     // 10 seconds socket timeout
   });
 
   const mailOptions = {
@@ -108,14 +109,15 @@ export const sendTaxAssignmentEmail = async (email, familyName, year, billsList)
 
   const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
-    port: 465,
-    secure: true, // Use SSL/TLS
+    port: 587,
+    secure: false, // Use STARTTLS (upgrades to TLS after connect)
+    requireTLS: true,
     auth: {
       user,
       pass,
     },
-    connectionTimeout: 5000, // 5 seconds connection timeout
-    socketTimeout: 5000,     // 5 seconds socket timeout
+    connectionTimeout: 10000, // 10 seconds connection timeout
+    socketTimeout: 10000,     // 10 seconds socket timeout
   });
 
   const fyLabel = `${year}-${Number(year) + 1}`;
