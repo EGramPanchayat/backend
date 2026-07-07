@@ -3,11 +3,24 @@ import ExpressError from "../utils/ExpressError.js";
 import wrapAsync from "../utils/wrapAsync.js";
 
 const connections = {};
-
+let sharedConnection = null;
 
 const ALLOWED_GP_NAMES = process.env.ALLOWED_GP_NAMES
   ? process.env.ALLOWED_GP_NAMES.split(",").map(n => n.trim()).filter(Boolean)
   : [];
+
+export const getSharedConnection = async () => {
+  if (!sharedConnection) {
+    if (!process.env.MONGO_URL) {
+      throw new ExpressError("MONGO_URL not defined in environment variables", 500);
+    }
+    const uri = process.env.MONGO_URL.replace("<GP_NAME>", "gp_shared_elibrary");
+    console.log("Connecting to Shared DB: gp_shared_elibrary");
+    sharedConnection = await mongoose.createConnection(uri).asPromise();
+    console.log("Connected to Shared DB: gp_shared_elibrary");
+  }
+  return sharedConnection;
+};
 
 export const attachDbConnection = wrapAsync(async (req, res, next) => {
   const gpName = req.headers["gp-name"];
@@ -34,3 +47,4 @@ export const attachDbConnection = wrapAsync(async (req, res, next) => {
   
   next();
 });
+

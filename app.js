@@ -1,13 +1,11 @@
+import "dotenv/config";
 import express from "express";
 import cookieParser from "cookie-parser";
-import dotenv from "dotenv";
 import cors from "cors";             
 import AdminRouter from "./routes/admin.js";
 import PublicRouter from "./routes/public.js";
 
 import { attachDbConnection } from "./middlewares/dbConnection.js";
-
-dotenv.config();
 
 const app = express();
 

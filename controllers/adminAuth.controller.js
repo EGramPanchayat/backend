@@ -27,7 +27,7 @@ function signRefreshToken(user) {
 async function setAuthCookies(res, user, conn) {
   const accessToken = signAccessToken(user);
   const refreshToken = signRefreshToken(user);
-  const opts = getCookieOptions();
+  const opts = getCookieOptions(res.req);
 
   // Save refresh token in the user document
   const User = conn.model("User", UserSchema);
@@ -86,8 +86,8 @@ export const refreshToken = wrapAsync(async (req, res) => {
     decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
   } catch (err) {
     // Refresh token expired or tampered — full re-login required
-    res.clearCookie("accessToken", getCookieClearOptions());
-    res.clearCookie("refreshToken", getCookieClearOptions());
+    res.clearCookie("accessToken", getCookieClearOptions(req));
+    res.clearCookie("refreshToken", getCookieClearOptions(req));
     throw new ExpressError("Refresh token expired — please log in again", 401);
   }
 
@@ -97,15 +97,15 @@ export const refreshToken = wrapAsync(async (req, res) => {
   const user = await User.findById(decoded.id).select("-password");
 
   if (!user) {
-    res.clearCookie("accessToken", getCookieClearOptions());
-    res.clearCookie("refreshToken", getCookieClearOptions());
+    res.clearCookie("accessToken", getCookieClearOptions(req));
+    res.clearCookie("refreshToken", getCookieClearOptions(req));
     throw new ExpressError("User no longer exists", 401);
   }
 
   // Verify the refresh token matches what's stored in the DB
   if (user.refreshToken !== token) {
-    res.clearCookie("accessToken", getCookieClearOptions());
-    res.clearCookie("refreshToken", getCookieClearOptions());
+    res.clearCookie("accessToken", getCookieClearOptions(req));
+    res.clearCookie("refreshToken", getCookieClearOptions(req));
     throw new ExpressError("Refresh token revoked — please log in again", 401);
   }
 
@@ -116,7 +116,7 @@ export const refreshToken = wrapAsync(async (req, res) => {
   // Update in DB
   await User.findByIdAndUpdate(user._id, { refreshToken: newRefreshToken });
 
-  const opts = getCookieOptions();
+  const opts = getCookieOptions(req);
   res.cookie("accessToken", newAccessToken, {
     ...opts,
     maxAge: 1000 * 60 * 15,
@@ -145,7 +145,7 @@ export const checkAuth = wrapAsync(async (req, res) => {
       const User = conn.model("User", UserSchema);
       const user = await User.findById(decoded.id).select("_id email");
       if (!user) {
-        res.clearCookie("accessToken", getCookieClearOptions());
+        res.clearCookie("accessToken", getCookieClearOptions(req));
         return res.json({ ok: false });
       }
     }
@@ -181,8 +181,8 @@ export const logout = wrapAsync(async (req, res) => {
     }
   }
 
-  res.clearCookie("accessToken", getCookieClearOptions());
-  res.clearCookie("refreshToken", getCookieClearOptions());
+  res.clearCookie("accessToken", getCookieClearOptions(req));
+  res.clearCookie("refreshToken", getCookieClearOptions(req));
 
   res.json({ success: true, message: "Logged out successfully" });
 });

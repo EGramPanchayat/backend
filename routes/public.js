@@ -24,7 +24,8 @@ import {
   updateBook,
   deleteBook,
   downloadBook,
-  getBookStats
+  getBookStats,
+  streamBookPdf
 } from "../controllers/book.controller.js";
 
 const router = Router();
@@ -74,6 +75,7 @@ router.get("/books/stats", getBookStats);
 router.get("/books", getAllBooks);
 router.get("/books/:id", getBookById);
 router.get("/books/download/:id", downloadBook);
+router.get("/books/stream/:id", streamBookPdf);
 router.post("/books", requireAuth, bookUpload, createBook);
 router.put("/books/:id", requireAuth, bookUpload, updateBook);
 router.delete("/books/:id", requireAuth, deleteBook);

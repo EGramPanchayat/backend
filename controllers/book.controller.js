@@ -1,18 +1,36 @@
 import BookSchema from "../DB/models/Book.js";
 import wrapAsync from "../utils/wrapAsync.js";
 import ExpressError from "../utils/ExpressError.js";
-import { uploadToCloudinary as uploadImage, deleteFromCloudinary as deleteImage } from "../middlewares/cloudinaryUpload.js";
-import { uploadToCloudinary as uploadPDF, deleteFromCloudinary as deletePDF } from "../middlewares/cloudinaryUploadPDF.js";
+import { uploadToR2, deleteFromR2 } from "../utils/r2Upload.js";
 import { cleanTempFiles } from "../middlewares/multerConfig.js";
+import { getSharedConnection } from "../middlewares/dbConnection.js";
 
 // Helper to get Book model from tenant connection
-function getBookModel(req) {
-  return req.dbConnection.model("Book", BookSchema);
+async function getBookModel() {
+  const conn = await getSharedConnection();
+  return conn.model("Book", BookSchema);
+}
+
+// Helper to dynamically rewrite legacy R2 API URLs to Public URLs in response payloads
+function fixBookUrls(book) {
+  if (!book) return book;
+  const oldHost = `https://${process.env.CLOUDFLARE_R2_BUCKET_NAME || "egram"}.r2.cloudflarestorage.com`;
+  const newHost = process.env.CLOUDFLARE_R2_PUBLIC_URL 
+    ? process.env.CLOUDFLARE_R2_PUBLIC_URL.replace(/\/$/, "")
+    : oldHost;
+
+  if (book.coverImage && book.coverImage.startsWith(oldHost) && newHost !== oldHost) {
+    book.coverImage = book.coverImage.replace(oldHost, newHost);
+  }
+  if (book.pdfFile && book.pdfFile.startsWith(oldHost) && newHost !== oldHost) {
+    book.pdfFile = book.pdfFile.replace(oldHost, newHost);
+  }
+  return book;
 }
 
 // ─── GET /api/admin/books/stats ────────────────
 export const getBookStats = wrapAsync(async (req, res) => {
-  const Book = getBookModel(req);
+  const Book = await getBookModel();
   const totalBooks = await Book.countDocuments();
   const result = await Book.aggregate([
     { $group: { _id: null, totalDownloads: { $sum: "$downloads" } } },
@@ -24,7 +42,7 @@ export const getBookStats = wrapAsync(async (req, res) => {
 
 // ─── GET /api/admin/books ──────────────────────
 export const getAllBooks = wrapAsync(async (req, res) => {
-  const Book = getBookModel(req);
+  const Book = await getBookModel();
   const { search, category } = req.query;
 
   const filter = {};
@@ -37,21 +55,23 @@ export const getAllBooks = wrapAsync(async (req, res) => {
   }
 
   const books = await Book.find(filter).sort({ createdAt: -1 });
-  res.json(books);
+  const fixedBooks = books.map(b => fixBookUrls(b.toObject()));
+  res.json(fixedBooks);
 });
 
 // ─── GET /api/admin/books/:id ──────────────────
 export const getBookById = wrapAsync(async (req, res) => {
-  const Book = getBookModel(req);
+  const Book = await getBookModel();
   const book = await Book.findById(req.params.id);
   if (!book) throw new ExpressError("Book not found", 404);
-  res.json(book);
+  
+  res.json(fixBookUrls(book.toObject()));
 });
 
 // ─── POST /api/admin/books ─────────────────────
 export const createBook = wrapAsync(async (req, res) => {
-  const Book = getBookModel(req);
-  const { title, author, category, description } = req.body;
+  const Book = await getBookModel();
+  const { title, author, category } = req.body;
 
   if (!title || !author || !category) {
     cleanTempFiles(Object.values(req.files || {}).flat());
@@ -64,37 +84,39 @@ export const createBook = wrapAsync(async (req, res) => {
   let pdfFileId = "";
 
   try {
-    // Upload cover image
+    // Upload cover image to Cloudflare R2
     if (req.files?.coverImage?.[0]) {
-      const result = await uploadImage(
+      const result = await uploadToR2(
         req.files.coverImage[0].path,
-        `${req.gpName}/elibrary/covers`,
-        title
+        "elibrary/covers",
+        req.files.coverImage[0].originalname
       );
       coverImage = result.url;
       coverImageId = result.public_id;
     }
 
-    // Upload PDF
+    // Upload PDF to Cloudflare R2
     if (req.files?.pdfFile?.[0]) {
-      const result = await uploadPDF(
+      const result = await uploadToR2(
         req.files.pdfFile[0].path,
-        `${req.gpName}/elibrary/pdfs`,
-        title
+        "elibrary/pdfs",
+        req.files.pdfFile[0].originalname
       );
       pdfFile = result.url;
       pdfFileId = result.public_id;
     }
   } catch (err) {
     cleanTempFiles(Object.values(req.files || {}).flat());
-    throw new ExpressError(`Upload failed: ${err.message}`, 500);
+    throw new ExpressError(`Upload to Cloudflare R2 failed: ${err.message}`, 500);
+  } finally {
+    // Clean up temporary files uploaded by multer diskStorage
+    cleanTempFiles(Object.values(req.files || {}).flat());
   }
 
   const book = new Book({
     title,
     author,
     category,
-    description: description || "",
     coverImage,
     coverImageId,
     pdfFile,
@@ -102,32 +124,33 @@ export const createBook = wrapAsync(async (req, res) => {
   });
 
   await book.save();
-  res.status(201).json(book);
+  res.status(201).json(fixBookUrls(book.toObject()));
 });
 
 // ─── PUT /api/admin/books/:id ──────────────────
 export const updateBook = wrapAsync(async (req, res) => {
-  const Book = getBookModel(req);
+  const Book = await getBookModel();
   const book = await Book.findById(req.params.id);
   if (!book) {
     cleanTempFiles(Object.values(req.files || {}).flat());
     throw new ExpressError("Book not found", 404);
   }
 
-  const { title, author, category, description } = req.body;
+  const { title, author, category } = req.body;
   if (title) book.title = title;
   if (author) book.author = author;
   if (category) book.category = category;
-  if (description !== undefined) book.description = description;
 
   try {
     // Replace cover image if new one provided
     if (req.files?.coverImage?.[0]) {
-      if (book.coverImageId) await deleteImage(book.coverImageId);
-      const result = await uploadImage(
+      if (book.coverImageId) {
+        try { await deleteFromR2(book.coverImageId); } catch (e) { console.error(e); }
+      }
+      const result = await uploadToR2(
         req.files.coverImage[0].path,
-        `${req.gpName}/elibrary/covers`,
-        book.title
+        "elibrary/covers",
+        req.files.coverImage[0].originalname
       );
       book.coverImage = result.url;
       book.coverImageId = result.public_id;
@@ -135,36 +158,41 @@ export const updateBook = wrapAsync(async (req, res) => {
 
     // Replace PDF if new one provided
     if (req.files?.pdfFile?.[0]) {
-      if (book.pdfFileId) await deletePDF(book.pdfFileId);
-      const result = await uploadPDF(
+      if (book.pdfFileId) {
+        try { await deleteFromR2(book.pdfFileId); } catch (e) { console.error(e); }
+      }
+      const result = await uploadToR2(
         req.files.pdfFile[0].path,
-        `${req.gpName}/elibrary/pdfs`,
-        book.title
+        "elibrary/pdfs",
+        req.files.pdfFile[0].originalname
       );
       book.pdfFile = result.url;
       book.pdfFileId = result.public_id;
     }
   } catch (err) {
     cleanTempFiles(Object.values(req.files || {}).flat());
-    throw new ExpressError(`Upload failed: ${err.message}`, 500);
+    throw new ExpressError(`Upload to Cloudflare R2 failed: ${err.message}`, 500);
+  } finally {
+    // Clean up temporary files
+    cleanTempFiles(Object.values(req.files || {}).flat());
   }
 
   await book.save();
-  res.json(book);
+  res.json(fixBookUrls(book.toObject()));
 });
 
 // ─── DELETE /api/admin/books/:id ───────────────
 export const deleteBook = wrapAsync(async (req, res) => {
-  const Book = getBookModel(req);
+  const Book = await getBookModel();
   const book = await Book.findById(req.params.id);
   if (!book) throw new ExpressError("Book not found", 404);
 
-  // Delete Cloudinary assets
+  // Delete Cloudflare R2 assets
   if (book.coverImageId) {
-    try { await deleteImage(book.coverImageId); } catch { /* ignore */ }
+    try { await deleteFromR2(book.coverImageId); } catch { /* ignore */ }
   }
   if (book.pdfFileId) {
-    try { await deletePDF(book.pdfFileId); } catch { /* ignore */ }
+    try { await deleteFromR2(book.pdfFileId); } catch { /* ignore */ }
   }
 
   await Book.findByIdAndDelete(req.params.id);
@@ -173,7 +201,7 @@ export const deleteBook = wrapAsync(async (req, res) => {
 
 // ─── GET /api/admin/books/download/:id ─────────
 export const downloadBook = wrapAsync(async (req, res) => {
-  const Book = getBookModel(req);
+  const Book = await getBookModel();
   const book = await Book.findById(req.params.id);
   if (!book) throw new ExpressError("Book not found", 404);
   if (!book.pdfFile) throw new ExpressError("No PDF available for this book", 404);
@@ -182,5 +210,25 @@ export const downloadBook = wrapAsync(async (req, res) => {
   book.downloads = (book.downloads || 0) + 1;
   await book.save();
 
-  res.json({ url: book.pdfFile, downloads: book.downloads });
+  const fixed = fixBookUrls(book.toObject());
+  res.json({ url: fixed.pdfFile, downloads: fixed.downloads });
+});
+
+// ─── GET /api/books/stream/:id ──────────────────
+export const streamBookPdf = wrapAsync(async (req, res) => {
+  const Book = await getBookModel();
+  const book = await Book.findById(req.params.id);
+  if (!book) throw new ExpressError("Book not found", 404);
+  if (!book.pdfFile) throw new ExpressError("No PDF available for this book", 404);
+
+  const fixed = fixBookUrls(book.toObject());
+  const fileUrl = fixed.pdfFile;
+
+  const response = await fetch(fileUrl);
+  if (!response.ok) throw new ExpressError("Failed to fetch PDF from storage", 500);
+
+  res.setHeader("Content-Type", "application/pdf");
+  
+  const arrayBuffer = await response.arrayBuffer();
+  res.send(Buffer.from(arrayBuffer));
 });
