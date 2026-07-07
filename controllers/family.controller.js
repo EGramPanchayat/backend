@@ -126,6 +126,26 @@ export const createFamily = wrapAsync(async (req, res) => {
     throw new ExpressError("Required fields missing", 450);
   }
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    throw new ExpressError("Invalid email address format", 400);
+  }
+
+  let finalWhatsappNumber = "";
+  if (whatsappNumber) {
+    const cleanedPhone = whatsappNumber.replace(/\D/g, "");
+    const phoneToValidate = (cleanedPhone.length === 12 && cleanedPhone.startsWith("91")) 
+      ? cleanedPhone.substring(2) 
+      : (cleanedPhone.length === 11 && cleanedPhone.startsWith("0")) 
+        ? cleanedPhone.substring(1) 
+        : cleanedPhone;
+    
+    if (phoneToValidate.length !== 10 || !/^[6-9]\d{9}$/.test(phoneToValidate)) {
+      throw new ExpressError("Invalid 10-digit WhatsApp mobile number", 400);
+    }
+    finalWhatsappNumber = phoneToValidate;
+  }
+
   let finalFamilyId = familyId;
   if (!finalFamilyId) {
     const allFamilies = await Family.find();
@@ -155,8 +175,8 @@ export const createFamily = wrapAsync(async (req, res) => {
     familyId: finalFamilyId,
     houseNumber,
     mainMemberName,
-    email,
-    whatsappNumber,
+    email: email.trim().toLowerCase(),
+    whatsappNumber: finalWhatsappNumber,
     address,
     menCount: Number(menCount || 0),
     womenCount: Number(womenCount || 0),
@@ -174,6 +194,34 @@ export const updateFamily = wrapAsync(async (req, res) => {
   const { id } = req.params;
   const conn = req.dbConnection;
   const Family = conn.model("Family", FamilySchema);
+
+  const { email, whatsappNumber } = req.body;
+
+  if (email !== undefined) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new ExpressError("Invalid email address format", 400);
+    }
+    req.body.email = email.trim().toLowerCase();
+  }
+
+  if (whatsappNumber !== undefined) {
+    if (whatsappNumber) {
+      const cleanedPhone = whatsappNumber.replace(/\D/g, "");
+      const phoneToValidate = (cleanedPhone.length === 12 && cleanedPhone.startsWith("91")) 
+        ? cleanedPhone.substring(2) 
+        : (cleanedPhone.length === 11 && cleanedPhone.startsWith("0")) 
+          ? cleanedPhone.substring(1) 
+          : cleanedPhone;
+      
+      if (phoneToValidate.length !== 10 || !/^[6-9]\d{9}$/.test(phoneToValidate)) {
+        throw new ExpressError("Invalid 10-digit WhatsApp mobile number", 400);
+      }
+      req.body.whatsappNumber = phoneToValidate;
+    } else {
+      req.body.whatsappNumber = "";
+    }
+  }
 
   const data = await Family.findByIdAndUpdate(id, req.body, { new: true });
   if (!data) throw new ExpressError("Family details not found", 404);
