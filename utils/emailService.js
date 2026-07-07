@@ -1,4 +1,8 @@
 import nodemailer from "nodemailer";
+import dns from "dns";
+
+// Force IPv4 first to avoid ENETUNREACH IPv6 resolution errors on cloud hostings
+dns.setDefaultResultOrder("ipv4first");
 
 export const sendOtpEmail = async (email, otpCode) => {
   const user = process.env.EMAIL_USER;
