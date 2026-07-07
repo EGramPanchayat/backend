@@ -187,6 +187,11 @@ export const deleteBook = wrapAsync(async (req, res) => {
   const book = await Book.findById(req.params.id);
   if (!book) throw new ExpressError("Book not found", 404);
 
+  // Block deletion of protected (seed-uploaded) books
+  if (book.isProtected) {
+    throw new ExpressError("This book is protected and cannot be deleted", 403);
+  }
+
   // Delete Cloudflare R2 assets
   if (book.coverImageId) {
     try { await deleteFromR2(book.coverImageId); } catch { /* ignore */ }
