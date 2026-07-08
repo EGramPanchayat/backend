@@ -940,7 +940,7 @@ export const toggleTaxSchedule = wrapAsync(async (req, res) => {
     });
   }
 
-  schedule.isPaused = !schedule.isPaused;
+  schedule.isPaused = false;
   await schedule.save();
   res.json(schedule);
 });
@@ -962,10 +962,6 @@ export const checkAndAutoReleaseTaxes = async (conn) => {
         ]
       });
       await schedule.save();
-    }
-
-    if (schedule.isPaused) {
-      return;
     }
 
     const now = new Date();
