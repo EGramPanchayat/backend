@@ -4,6 +4,9 @@ import wrapAsync from "../utils/wrapAsync.js";
 import FamilySchema from "../DB/models/family.js";
 import TaxBillSchema from "../DB/models/taxBill.js";
 import SiteConfigSchema from "../DB/models/siteConfig.js";
+import PaymentHistorySchema from "../DB/models/paymentHistory.js";
+import UserApplicationSchema from "../DB/models/userApplication.js";
+import NotificationSchema from "../DB/models/notification.js";
 
 // Public lookup by Family ID and Token (for QR scanning)
 export const lookupFamily = wrapAsync(async (req, res) => {
@@ -131,6 +134,16 @@ export const createFamily = wrapAsync(async (req, res) => {
     throw new ExpressError("Invalid email address format", 400);
   }
 
+  const targetEmail = email.trim().toLowerCase();
+  const sharedEmailsEnv = process.env.SHARED_EMAILS || "gpGomewadi@gmail.com";
+  const sharedEmails = sharedEmailsEnv.split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
+  if (!sharedEmails.includes(targetEmail)) {
+    const emailExists = await Family.findOne({ email: targetEmail });
+    if (emailExists) {
+      throw new ExpressError(`Email address ${email} is already registered by another family`, 400);
+    }
+  }
+
   let finalWhatsappNumber = "";
   if (whatsappNumber) {
     const cleanedPhone = whatsappNumber.replace(/\D/g, "");
@@ -202,7 +215,16 @@ export const updateFamily = wrapAsync(async (req, res) => {
     if (!emailRegex.test(email)) {
       throw new ExpressError("Invalid email address format", 400);
     }
-    req.body.email = email.trim().toLowerCase();
+    const targetEmail = email.trim().toLowerCase();
+    const sharedEmailsEnv = process.env.SHARED_EMAILS || "gpGomewadi@gmail.com";
+    const sharedEmails = sharedEmailsEnv.split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
+    if (!sharedEmails.includes(targetEmail)) {
+      const emailExists = await Family.findOne({ email: targetEmail, _id: { $ne: id } });
+      if (emailExists) {
+        throw new ExpressError(`Email address ${email} is already registered by another family`, 400);
+      }
+    }
+    req.body.email = targetEmail;
   }
 
   if (whatsappNumber !== undefined) {
@@ -234,9 +256,24 @@ export const deleteFamily = wrapAsync(async (req, res) => {
   const { id } = req.params;
   const conn = req.dbConnection;
   const Family = conn.model("Family", FamilySchema);
+  const TaxBill = conn.model("TaxBill", TaxBillSchema);
+  const PaymentHistory = conn.model("PaymentHistory", PaymentHistorySchema);
+  const UserApplication = conn.model("UserApplication", UserApplicationSchema);
+  const Notification = conn.model("Notification", NotificationSchema);
 
-  const result = await Family.findByIdAndDelete(id);
-  if (!result) throw new ExpressError("Family not found", 404);
+  const family = await Family.findById(id);
+  if (!family) throw new ExpressError("Family not found", 404);
 
-  res.json({ success: true, message: "Family deleted successfully" });
+  const { familyId } = family;
+
+  // Delete family details
+  await Family.findByIdAndDelete(id);
+
+  // Cascade delete all related records
+  await TaxBill.deleteMany({ familyId });
+  await PaymentHistory.deleteMany({ familyId });
+  await UserApplication.deleteMany({ familyId });
+  await Notification.deleteMany({ familyId });
+
+  res.json({ success: true, message: "Family and all associated tax/payment records deleted successfully" });
 });
