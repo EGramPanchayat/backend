@@ -36,9 +36,25 @@ router.get("/gov-officials", getGovOfficials);
 router.get("/news", getNews);
 router.get("/notices", getNotices);
 router.get("/devworks", getDevWorks);
-router.get("/executive-board", getExecutiveBoard);
-
-
+// Krushi agricultural public data route
+router.get("/krushi-info", (req, res) => {
+  res.json({
+    success: true,
+    weather: {
+      location: "पुणे / गोमेवाडी",
+      temp: "२८°C",
+      humidity: "६०%",
+      wind: "१० किमी/तास",
+      forecast: [
+        { day: "उद्या", condition: "ढगाळ", temp: "२४°C" },
+        { day: "परवा", condition: "ढगाळ", temp: "२०°C" },
+        { day: "तेरवा", condition: "पाऊस", temp: "२०°C" }
+      ]
+    },
+    title: "शेतीची पुढील पिढी",
+    description: "आम्ही डेटा देतो जो जागतिक शेतीच्या उद्दिष्टांना सक्षम करतो."
+  });
+});
 
 // Form applications (public submission)
 router.post("/certificate-request", imageUpload.single("file"), createDakhala);
