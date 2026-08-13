@@ -25,8 +25,6 @@ const SiteConfigSchema = new mongoose.Schema({
   aboutTitle: { type: String, default: "गावाची माहिती" },
   aboutParagraphs: [String],
 
-  // Slogans (ticker)
-  slogans: [String],
 
   // Contact Info
   contact: {

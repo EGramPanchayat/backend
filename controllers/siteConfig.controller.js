@@ -23,12 +23,7 @@ export const updateSiteConfig = wrapAsync(async (req, res) => {
     config = new SiteConfig();
   }
 
-  // Update basic identity fields
-  if (body.villageName !== undefined) config.villageName = body.villageName;
-  if (body.gpName !== undefined) config.gpName = body.gpName;
-  if (body.taluka !== undefined) config.taluka = body.taluka;
-  if (body.district !== undefined) config.district = body.district;
-  if (body.pincode !== undefined) config.pincode = body.pincode;
+  // Basic identity fields are static constants and cannot be edited via Admin
 
   // Update stats
   if (body.stats && Array.isArray(body.stats)) {
