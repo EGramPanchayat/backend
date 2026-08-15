@@ -157,8 +157,44 @@ export const getExecutiveBoard = wrapAsync(async (req, res) => {
   const conn = req.dbConnection;
   const ExecutiveBoard = conn.model("ExecutiveBoard", ExecutiveBoardSchema);
 
-  const board = await ExecutiveBoard.findOne();
-  res.json(board || {});
+  let board = await ExecutiveBoard.findOne();
+
+  const isBoardEmpty =
+    !board ||
+    (!board.sarpanch?.name &&
+      !board.upsarpanch?.name &&
+      (!board.members || board.members.length === 0) &&
+      (!board.staff || !board.staff.officers?.length));
+
+  if (isBoardEmpty) {
+    return res.json({
+      sarpanch: {
+        name: "मा. सरपंच",
+        mobile: "0000000000",
+        image: "/images/profile.png",
+      },
+      upsarpanch: {
+        name: "मा. उपसरपंच",
+        mobile: "0000000000",
+        image: "/images/profile.png",
+      },
+      members: [
+        { name: "मा. सदस्य १", role: "सदस्य", mobile: "0000000000", image: "/images/profile.png" },
+        { name: "मा. सदस्य २", role: "सदस्य", mobile: "0000000000", image: "/images/profile.png" },
+        { name: "मा. सदस्य ३", role: "सदस्य", mobile: "0000000000", image: "/images/profile.png" },
+      ],
+      staff: {
+        officers: [
+          { name: "ग्रामपंचायत अधिकारी (ग्रामसेवक)", role: "ग्रामपंचायत अधिकारी", mobile: "0000000000", image: "/images/profile.png" },
+          { name: "ग्राम महसूल अधिकारी", role: "ग्राम महसूल अधिकारी", mobile: "0000000000", image: "/images/profile.png" },
+          { name: "संगणक चालक / लिपिक", role: "डेटा ऑपरेटर", mobile: "0000000000", image: "/images/profile.png" },
+          { name: "पाणीपुरवठा कर्मचारी", role: "पाणीपुरवठा कर्मचारी", mobile: "0000000000", image: "/images/profile.png" },
+        ],
+      },
+    });
+  }
+
+  res.json(board);
 });
 
 
