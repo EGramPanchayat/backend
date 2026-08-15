@@ -33,6 +33,7 @@ const router = Router();
 // Public content endpoints (no auth required)
 router.get("/site-config", getSiteConfig);
 router.get("/gov-officials", getGovOfficials);
+router.get("/executive-board", getExecutiveBoard);
 router.get("/news", getNews);
 router.get("/notices", getNotices);
 router.get("/devworks", getDevWorks);

@@ -152,14 +152,13 @@ export const changeExecutiveBoard = wrapAsync(async (req, res) => {
 });
 
 
-/** GET /exboard-karyakari-mandal */
+/** GET /executive-board */
 export const getExecutiveBoard = wrapAsync(async (req, res) => {
   const conn = req.dbConnection;
   const ExecutiveBoard = conn.model("ExecutiveBoard", ExecutiveBoardSchema);
 
   const board = await ExecutiveBoard.findOne();
-  if (!board) return res.status(404).json({ message: "No Executive Board data found" });
-  res.json(board);
+  res.json(board || {});
 });
 
 
